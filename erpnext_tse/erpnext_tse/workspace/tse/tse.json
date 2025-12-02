@@ -1,0 +1,48 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"roYlWlP9q7\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h2\\\">TSE Integration</span>\",\"col\":12}},{\"id\":\"EQJVDJGM4M\",\"type\":\"paragraph\",\"data\":{\"text\":\"#TODO\",\"col\":12}},{\"id\":\"eV3KXw-jWN\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"KTa-cMiu7U\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"TSE Settings\",\"col\":3}}]",
+ "creation": "2025-12-02 23:25:33.970028",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "setting-gear",
+ "idx": 0,
+ "indicator_color": "",
+ "is_hidden": 0,
+ "label": "TSE",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "TSE Settings",
+   "link_count": 0,
+   "link_to": "TSE Settings",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2025-12-02 23:35:32.538889",
+ "modified_by": "Administrator",
+ "module": "ERPNext TSE",
+ "name": "TSE",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 18.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "TSE Settings",
+   "link_to": "TSE Settings",
+   "type": "DocType"
+  }
+ ],
+ "title": "TSE"
+}

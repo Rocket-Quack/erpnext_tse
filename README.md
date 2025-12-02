@@ -1,41 +1,33 @@
-### ERPNext TSE
+<p align="center">
+  <img
+    src="docs/assets/TSE_KEY_Logo.svg"
+    alt="ERPNext TSE Logo"
+    width="64"
+  />
+</p>
 
-TSE Integration für ERPNext
+# ERPNext TSE Integration
 
-### Installation
+## Übersicht
+ERPNext TSE erweitert ERPNext um die Anbindung an eine Technische Sicherheitseinrichtung (TSE) und stellt die Grundlagen für gesetzeskonforme Kassenvorgänge in Deutschland bereit.
 
-You can install this app using the [bench](https://github.com/frappe/bench) CLI:
+#TODO Fiskaly Umsetzung und Erklärung
+
+## Installation
+
+Sobald ERPNext installiert ist wird die App mittels des folgenden Befehl zur Bench Umgebung hinzugefügt.
 
 ```bash
-cd $PATH_TO_YOUR_BENCH
-bench get-app $URL_OF_THIS_REPO --branch develop
-bench install-app erpnext_tse
+bench get-app https://github.com/Rocket-Quack/erpnext_tse.git --branch version-15
 ```
 
-### Contributing
-
-This app uses `pre-commit` for code formatting and linting. Please [install pre-commit](https://pre-commit.com/#installation) and enable it for this repository:
-
+Anschließend kann die App für eine Seite installiert werden.
 ```bash
-cd apps/erpnext_tse
-pre-commit install
+bench --site yoursite.com install-app erpnext_tse
 ```
 
-Pre-commit is configured to use the following tools for checking and formatting your code:
+## Konfiguration
+#TODO
 
-- ruff
-- eslint
-- prettier
-- pyupgrade
-
-### CI
-
-This app can use GitHub Actions for CI. The following workflows are configured:
-
-- CI: Installs this app and runs unit tests on every push to `develop` branch.
-- Linters: Runs [Frappe Semgrep Rules](https://github.com/frappe/semgrep-rules) and [pip-audit](https://pypi.org/project/pip-audit/) on every pull request.
-
-
-### License
-
-gpl-3.0
+## License
+GNU GPL V3. See the `LICENSE` file for more information.
