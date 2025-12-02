@@ -1,10 +1,12 @@
 <p align="center">
   <img
-    src="docs/assets/TSE_KEY_Logo.svg"
+    src="docs/assets/TSE_Key_Logo.svg"
     alt="ERPNext TSE Logo"
     width="64"
   />
 </p>
+
+
 
 # ERPNext TSE Integration
 
