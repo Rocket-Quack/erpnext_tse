@@ -1,3 +1,7 @@
+# Erstkonfiguration der Fiskaly-TSE
+
+#TODO
+
 # Ablauf POS-Rechnung 
 
 ```mermaid
@@ -23,3 +27,10 @@ sequenceDiagram
     App->>POS: Schreibe TSE-Daten in POS Invoice + lege TSE Transaction an
 
 ````
+
+# Clients für TSE anlegen
+#TODO
+
+
+# POS Profile verknüpfen
+#TODO
