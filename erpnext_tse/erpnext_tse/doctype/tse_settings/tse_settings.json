@@ -8,6 +8,8 @@
   "allgemein_tab",
   "sb_allgemein",
   "enabled",
+  "sb_cloud_provider",
+  "tse_provider",
   "sb_zugangsdaten",
   "environment",
   "base_url",
@@ -27,7 +29,10 @@
   "refresh_token_expires_at",
   "sb_auth_status",
   "last_auth_status",
-  "last_auth_message"
+  "last_auth_message",
+  "entwicklung_tab",
+  "sb_entwicklung",
+  "enable_debug_logging"
  ],
  "fields": [
   {
@@ -156,12 +161,42 @@
    "fieldtype": "Small Text",
    "label": "Last Auth Message",
    "read_only": 1
+  },
+  {
+   "fieldname": "entwicklung_tab",
+   "fieldtype": "Tab Break",
+   "label": "Entwicklung"
+  },
+  {
+   "fieldname": "sb_entwicklung",
+   "fieldtype": "Section Break",
+   "label": "Entwicklung"
+  },
+  {
+   "default": "0",
+   "description": "Nur f\u00fcr Personen gedacht, die wissen, was Sie tun.",
+   "fieldname": "enable_debug_logging",
+   "fieldtype": "Check",
+   "label": "Enable Debug Logging"
+  },
+  {
+   "fieldname": "sb_cloud_provider",
+   "fieldtype": "Section Break",
+   "label": "TSE Provider"
+  },
+  {
+   "fieldname": "tse_provider",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Cloud Provider",
+   "options": "Fiskaly",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "issingle": 1,
  "links": [],
- "modified": "2025-12-03 13:14:54.124387",
+ "modified": "2025-12-03 16:36:44.865457",
  "modified_by": "Administrator",
  "module": "ERPNext TSE",
  "name": "TSE Settings",
