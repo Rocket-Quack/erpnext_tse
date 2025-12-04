@@ -13,6 +13,9 @@
   "tse_security_device_details_section",
   "tss_id",
   "tss_status",
+  "admin_puk",
+  "admin_pin",
+  "admin_pin_set_at",
   "column_break_hhgj",
   "tss_serial_number",
   "activated_at",
@@ -100,11 +103,29 @@
    "fieldname": "column_break_nxha",
    "fieldtype": "Column Break",
    "read_only": 1
+  },
+  {
+   "fieldname": "admin_puk",
+   "fieldtype": "Password",
+   "label": "Admin PUK",
+   "read_only": 1
+  },
+  {
+   "fieldname": "admin_pin",
+   "fieldtype": "Password",
+   "label": "Admin PIN",
+   "read_only": 1
+  },
+  {
+   "fieldname": "admin_pin_set_at",
+   "fieldtype": "Datetime",
+   "label": "Admin PIN set at",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "links": [],
- "modified": "2025-12-04 01:42:27.922527",
+ "modified": "2025-12-04 17:24:33.755733",
  "modified_by": "Administrator",
  "module": "ERPNext TSE",
  "name": "TSE Security Device",
