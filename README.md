@@ -1,6 +1,6 @@
 <p align="center">
   <img
-    src="docs/assets/TSE_Key_Logo.svg"
+    src="docs/assets/TSE_APP_LOGO.png"
     alt="ERPNext TSE Logo"
     width="64"
   />
