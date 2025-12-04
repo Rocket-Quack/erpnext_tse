@@ -1,14 +1,9 @@
-<p align="center">
-  <img
-    src="docs/assets/TSE_APP_LOGO.png"
-    alt="ERPNext TSE Logo"
-    width="164"
-  />
-</p>
-
-
-
-# ERPNext TSE Integration
+<div align="center">
+  <p>
+    <img src="docs/assets/TSE_APP_LOGO.png" alt="ERPNext TSE Logo" width="164"/>
+  </p>
+    <h1>TSE ERPNext Integration</h1>
+</div>
 
 ## Übersicht
 ERPNext TSE erweitert ERPNext um die Anbindung an eine Technische Sicherheitseinrichtung (TSE) und stellt die Grundlagen für gesetzeskonforme Kassenvorgänge in Deutschland bereit.
