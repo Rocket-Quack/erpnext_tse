@@ -2,6 +2,8 @@
 # For license information, please see license.txt
 
 import frappe
+import secrets
+import string
 from frappe.model.document import Document
 from frappe import _
 
@@ -27,6 +29,61 @@ class TSESecurityDevice(Document):
                 _("TSE functionality is not enabled in TSE Settings. "
                   "Please enable it before creating a TSE Security Device.")
             )
+
+    @staticmethod
+    def _generate_admin_pin(length: int = 8) -> str:
+        # Ziffern verwenden
+        digits = string.digits
+        return "".join(secrets.choice(digits) for _ in range(length))
+
+    def set_admin_pin_at_provider(self):
+
+        self.ensure_tse_enabled()
+
+        if self.is_new():
+            self.tss_status = "UNINITIALIZED"
+
+        if not self.tss_id:
+            frappe.throw("Es ist noch keine TSS-ID hinterlegt.")
+
+        if not self.get_password("admin_puk"):
+            frappe.throw("Kein Admin-PUK gespeichert. Bitte TSS neu anlegen oder PUK nachtragen.")
+
+        #1 Zufälligen Admin-PIN generieren
+        new_admin_pin = self._generate_admin_pin(length=8)
+
+        #2 PIN im DocType speichern
+        self.admin_pin = new_admin_pin
+        self.save(ignore_permissions=True)
+
+        #3 PIN bei Fiskaly setzen
+        provider = get_tse_provider()
+
+        try:
+            resp = provider.change_admin_pin(
+                tss_id=self.tss_id,
+                admin_puk=self.get_password("admin_puk"),
+                new_admin_pin=new_admin_pin,
+            )
+        except Exception as e:
+            self.log_provider_event(
+                event_type="SET_ADMIN_PIN_FAILED",
+                provider_action="change_admin_pin",
+                resp={"error": {"message": str(e)}},
+                status_before=self.tss_status,
+                status_after=self.tss_status,
+                message_summary=_("Error while setting admin PIN at provider"),
+            )
+            raise
+
+        self.log_provider_event(
+            event_type="SET_ADMIN_PIN",
+            provider_action="change_admin_pin",
+            resp=resp,
+            status_before=self.tss_status,
+            status_after=self.tss_status,
+            message_summary=_("Admin PIN set at provider and stored in document"),
+        )
 
     # ---------- Provider-Event-Historie ----------
 
@@ -95,6 +152,7 @@ class TSESecurityDevice(Document):
 
         # Erfolgreich angelegt → CREATED
         self.tss_id = resp.get("id")
+        self.admin_puk = resp.get("admin_puk")
         self.tss_status = "CREATED"
 
         self.log_provider_event(
@@ -166,7 +224,10 @@ class TSESecurityDevice(Document):
     
     @frappe.whitelist()
     def initialize_tss_at_provider(self):
-        """TSS initialisieren. Nur wenn Status UNINITIALIZED und tss_id vorhanden."""
+        """
+        TSS initialisieren. Nur wenn Status UNINITIALIZED und tss_id vorhanden.
+        Erfordert vorher gesetzten Admin-PIN und Admin-Authentifizierung.
+        """
         self.ensure_tse_enabled()
 
         if not self.tss_id:
@@ -184,7 +245,14 @@ class TSESecurityDevice(Document):
         old_status = self.tss_status
 
         try:
+            # Admin authentifizieren
+            provider.authenticate_admin(
+                tss_id=self.tss_id,
+                admin_pin=self.get_password("admin_pin"),
+            )
+            # TSS initialisieren (state → INITIALIZED)
             resp = provider.initialize_tss(self.tss_id)
+
         except Exception as e:
             self.tss_status = "ERROR"
             self.log_provider_event(
@@ -217,7 +285,11 @@ class TSESecurityDevice(Document):
 
     @frappe.whitelist()
     def deactivate_tss_at_provider(self):
-        """TSS deaktivieren. Nur wenn aktuell INITIALIZED."""
+        """
+        TSS deaktivieren. Nur wenn aktuell INITIALIZED oder UNINITIALIZED.
+        Erfordert Admin-Authentifizierung.
+        Kann nicht Rückgängig gemacht werden
+        """
         self.ensure_tse_enabled()
 
         if not self.tss_id:
@@ -229,13 +301,24 @@ class TSESecurityDevice(Document):
                   "Current status: {0}").format(self.tss_status)
             )
 
+        if not self.get_password("admin_pin"):
+            frappe.throw(_("Admin PIN is not set. Please set the admin PIN before deactivating the TSS."))
+
         settings = frappe.get_single("TSE Settings")
         provider = get_tse_provider(settings)
 
         old_status = self.tss_status
 
         try:
+            # 1) Admin authentifizieren
+            provider.authenticate_admin(
+                tss_id=self.tss_id,
+                admin_pin=self.get_password("admin_pin"),
+            )
+
+            # 2) TSS deaktivieren (state → DISABLED)
             resp = provider.deactivate_tss(self.tss_id)
+
         except Exception as e:
             self.tss_status = "ERROR"
             self.log_provider_event(
@@ -260,55 +343,6 @@ class TSESecurityDevice(Document):
             message_summary=_("TSS deactivated at provider"),
         )
 
-		# Dokument speichern
-        self.save(ignore_permissions=True)
-        frappe.db.commit()
-
-    @frappe.whitelist()
-    def deactivate_tss_at_provider(self):
-        """TSS deaktivieren. Nur wenn aktuell INITIALIZED."""
-        self.ensure_tse_enabled()
-
-        if not self.tss_id:
-            frappe.throw(_("Cannot deactivate TSS without tss_id."))
-
-        if self.tss_status != "INITIALIZED":
-            frappe.throw(
-                _("TSS can only be deactivated when status is 'INITIALIZED'. "
-                  "Current status: {0}").format(self.tss_status)
-            )
-
-        settings = frappe.get_single("TSE Settings")
-        provider = get_tse_provider(settings)
-
-        old_status = self.tss_status
-
-        try:
-            resp = provider.deactivate_tss(self.tss_id)
-        except Exception as e:
-            self.tss_status = "ERROR"
-            self.log_provider_event(
-                event_type="DEACTIVATE_TSS_FAILED",
-                provider_action="deactivate_tss",
-                resp={"error": {"message": str(e)}},
-                status_before=old_status,
-                status_after=self.tss_status,
-                message_summary=_("Error while deactivating TSS at provider"),
-            )
-            raise
-
-        self.tss_status = "DISABLED"
-        self.deactivated_at = frappe.utils.now_datetime()
-
-        self.log_provider_event(
-            event_type="DEACTIVATE_TSS",
-            provider_action="deactivate_tss",
-            resp=resp,
-            status_before=old_status,
-            status_after=self.tss_status,
-            message_summary=_("TSS deactivated at provider"),
-        )
-
-		# Dokument speichern
+        # Dokument speichern
         self.save(ignore_permissions=True)
         frappe.db.commit()
