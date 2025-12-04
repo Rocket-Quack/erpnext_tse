@@ -57,7 +57,8 @@ class TSESecurityDevice(Document):
         self.save(ignore_permissions=True)
 
         #3 PIN bei Fiskaly setzen
-        provider = get_tse_provider()
+        settings = frappe.get_single("TSE Settings")
+        provider = get_tse_provider(settings)
 
         try:
             resp = provider.change_admin_pin(
@@ -245,6 +246,9 @@ class TSESecurityDevice(Document):
         old_status = self.tss_status
 
         try:
+            # Admin Pin für TSS erstellen
+            self.set_admin_pin_at_provider()
+
             # Admin authentifizieren
             provider.authenticate_admin(
                 tss_id=self.tss_id,
