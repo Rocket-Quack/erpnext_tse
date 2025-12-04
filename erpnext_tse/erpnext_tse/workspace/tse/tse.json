@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"roYlWlP9q7\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h2\\\">TSE Integration</span>\",\"col\":12}},{\"id\":\"EQJVDJGM4M\",\"type\":\"paragraph\",\"data\":{\"text\":\"#TODO\",\"col\":12}},{\"id\":\"eV3KXw-jWN\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"KTa-cMiu7U\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"TSE Settings\",\"col\":3}}]",
+ "content": "[{\"id\":\"roYlWlP9q7\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h2\\\">TSE Integration</span>\",\"col\":12}},{\"id\":\"EQJVDJGM4M\",\"type\":\"paragraph\",\"data\":{\"text\":\"#TODO\",\"col\":12}},{\"id\":\"eV3KXw-jWN\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"KTa-cMiu7U\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"TSE Settings\",\"col\":5}},{\"id\":\"SYVqqUnuMH\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"TSE Security Device\",\"col\":6}}]",
  "creation": "2025-12-02 23:25:33.970028",
  "custom_blocks": [],
  "docstatus": 0,
@@ -24,7 +24,7 @@
    "type": "Link"
   }
  ],
- "modified": "2025-12-02 23:35:32.538889",
+ "modified": "2025-12-03 23:57:21.564545",
  "modified_by": "Administrator",
  "module": "ERPNext TSE",
  "name": "TSE",
@@ -41,6 +41,14 @@
    "doc_view": "List",
    "label": "TSE Settings",
    "link_to": "TSE Settings",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "TSE Security Device",
+   "link_to": "TSE Security Device",
+   "stats_filter": "[]",
    "type": "DocType"
   }
  ],

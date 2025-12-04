@@ -6,10 +6,11 @@ from __future__ import annotations
 import logging
 from datetime import datetime
 from typing import Any
+import uuid
 
 import frappe
 import requests
-from frappe.utils import now_datetime
+from frappe.utils import now_datetime, get_datetime
 
 from .base import BaseTSEProvider
 
@@ -78,7 +79,10 @@ class FiskalyProvider(BaseTSEProvider):
         if not token or not expires_at:
             return False
 
-        delta = (expires_at - now_datetime()).total_seconds()
+        # Frappe speichert Datetime-Felder als string → daher muss dieser wieder in datetime umgewandelt werden
+        expires_dt = get_datetime(expires_at)
+
+        delta = (expires_dt - now_datetime()).total_seconds()
         return delta > skew_seconds
 
     def ensure_valid_access_token(self) -> str:
@@ -368,3 +372,96 @@ class FiskalyProvider(BaseTSEProvider):
 
         headers["Authorization"] = f"Bearer {token}"
         return requests.request(method, url, headers=headers, timeout=15, **kwargs)
+    
+    def _request_json(self, method: str, path: str, **kwargs) -> dict[str, Any]:
+        """Wrapper um request(), der immer ein Dict zurückgibt und Fehler schön aufbereitet."""
+        resp = self.request(method, path, **kwargs)
+
+        status = resp.status_code
+        try:
+            data = resp.json()
+        except ValueError:
+            # falls der Body kein JSON ist → als Fehler behandeln
+            err = self._parse_error_response(resp)
+            frappe.throw(
+                f"Fiskaly returned a non-JSON response ({status}). "
+                f"Error: {err.get('message') or err.get('error')}"
+            )
+
+        # Statuscode immer mitgeben, damit dein Log was zum Anzeigen hat
+        if "status_code" not in data:
+            data["status_code"] = status
+
+        # 2xx → ok, sonst Fehler werfen
+        if 200 <= status < 300:
+            return data
+
+        # Fehlerfall: vorhandene Struktur nutzen und Exception werfen
+        err = self._parse_error_response(resp)
+        frappe.throw(
+            f"Fiskaly returned an error ({status}). "
+            f"Code: {err.get('code') or 'N/A'}, "
+            f"Message: {err.get('message') or err.get('error') or 'Unknown error'}"
+        )
+
+    # ---------------------------------------------------------------------
+    # High-Level: TSS-Operationen für TSESecurityDevice
+    # ---------------------------------------------------------------------
+
+    def create_tss(self, company: str, description: str | None = None) -> dict[str, Any]:
+        """TSS bei Fiskaly anlegen."""
+        
+        # UUID für das anlegen der TSS generieren
+        tss_id = str(uuid.uuid4())
+
+        payload = {
+            # Beim anlegen einer TSS wird keine Payload benötigt
+        }
+
+        data = self._request_json(
+            method="PUT",
+            path=f"/tss/{tss_id}",
+            json=payload,
+        )
+
+        data.setdefault("id", tss_id)
+        return data
+    
+    def deploy_tss(self, tss_id: str) -> dict[str, Any]:
+        """TSS deployen: (State → UNINITIALIZED)."""
+        payload = {
+            "state": "UNINITIALIZED",
+        }
+
+        data = self._request_json(
+            method="PATCH",
+            path=f"/tss/{tss_id}",
+            json=payload,
+        )
+        return data
+
+    def initialize_tss(self, tss_id: str) -> dict[str, Any]:
+        """TSS initialisieren (State → INITIALIZED)."""
+        payload = {
+            "state": "INITIALIZED",
+        }
+
+        data = self._request_json(
+            method="PUT",
+            path=f"/tss/{tss_id}",
+            json=payload,
+        )
+        return data
+
+    def deactivate_tss(self, tss_id: str) -> dict[str, Any]:
+        """TSS deaktivieren (State → DISABLED)."""
+        payload = {
+            "state": "DISABLED",
+        }
+
+        data = self._request_json(
+            method="PUT",
+            path=f"/tss/{tss_id}",
+            json=payload,
+        )
+        return data

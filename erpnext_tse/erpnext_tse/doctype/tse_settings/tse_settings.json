@@ -39,7 +39,7 @@
    "default": "0",
    "fieldname": "enabled",
    "fieldtype": "Check",
-   "label": "Aktiviert"
+   "label": "Activated"
   },
   {
    "fieldname": "allgemein_tab",
@@ -49,12 +49,12 @@
   {
    "fieldname": "organisation_tab",
    "fieldtype": "Tab Break",
-   "label": "Organisation"
+   "label": "Organization"
   },
   {
    "fieldname": "sb_fiskaly_organisation",
    "fieldtype": "Section Break",
-   "label": "Fiskaly Organisation"
+   "label": "Fiskaly Organization"
   },
   {
    "fieldname": "organization_id",
@@ -83,12 +83,12 @@
   {
    "fieldname": "sb_allgemein",
    "fieldtype": "Section Break",
-   "label": "Allgemein"
+   "label": "General"
   },
   {
    "fieldname": "sb_zugangsdaten",
    "fieldtype": "Section Break",
-   "label": "Zugangsdaten"
+   "label": "Login details"
   },
   {
    "fieldname": "environment",
@@ -165,16 +165,16 @@
   {
    "fieldname": "entwicklung_tab",
    "fieldtype": "Tab Break",
-   "label": "Entwicklung"
+   "label": "Development"
   },
   {
    "fieldname": "sb_entwicklung",
    "fieldtype": "Section Break",
-   "label": "Entwicklung"
+   "label": "Development"
   },
   {
    "default": "0",
-   "description": "Nur f\u00fcr Personen gedacht, die wissen, was Sie tun.",
+   "description": "Only intended for people who know what they are doing.",
    "fieldname": "enable_debug_logging",
    "fieldtype": "Check",
    "label": "Enable Debug Logging"
@@ -196,7 +196,7 @@
  "grid_page_length": 50,
  "issingle": 1,
  "links": [],
- "modified": "2025-12-03 16:36:44.865457",
+ "modified": "2025-12-03 22:24:51.877588",
  "modified_by": "Administrator",
  "module": "ERPNext TSE",
  "name": "TSE Settings",

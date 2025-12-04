@@ -1,0 +1,132 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:TSE-{#####}",
+ "creation": "2025-12-03 22:15:22.545313",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "details_tab",
+  "internal_name",
+  "column_break_hbli",
+  "company",
+  "tse_security_device_details_section",
+  "tss_id",
+  "tss_status",
+  "column_break_hhgj",
+  "tss_serial_number",
+  "activated_at",
+  "deactivated_at",
+  "provider_responses_tab",
+  "column_break_nxha",
+  "provider_events"
+ ],
+ "fields": [
+  {
+   "fieldname": "details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "internal_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Internal Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_hbli",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company"
+  },
+  {
+   "fieldname": "tse_security_device_details_section",
+   "fieldtype": "Section Break",
+   "label": "TSE Security Device Details",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tss_id",
+   "fieldtype": "Data",
+   "label": "TSE ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tss_status",
+   "fieldtype": "Select",
+   "label": "TSE Status",
+   "options": "DRAFT\nCREATED\nUNINITIALIZED\nINITIALIZED\nDISABLED\nERROR",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_hhgj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "tss_serial_number",
+   "fieldtype": "Data",
+   "label": "TSE Serial Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "activated_at",
+   "fieldtype": "Datetime",
+   "label": "Activated at",
+   "read_only": 1
+  },
+  {
+   "fieldname": "deactivated_at",
+   "fieldtype": "Datetime",
+   "label": "Deactivated at",
+   "read_only": 1
+  },
+  {
+   "fieldname": "provider_responses_tab",
+   "fieldtype": "Tab Break",
+   "label": "Provider Responses"
+  },
+  {
+   "fieldname": "provider_events",
+   "fieldtype": "Table",
+   "label": "Provider Events",
+   "options": "TSE Security Device Provider Event"
+  },
+  {
+   "fieldname": "column_break_nxha",
+   "fieldtype": "Column Break",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "links": [],
+ "modified": "2025-12-04 01:42:27.922527",
+ "modified_by": "Administrator",
+ "module": "ERPNext TSE",
+ "name": "TSE Security Device",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

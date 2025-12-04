@@ -1,0 +1,121 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-12-03 23:12:01.876853",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "event_time",
+  "event_type",
+  "provider_action",
+  "status_before",
+  "status_after",
+  "column_break_qfah",
+  "message_summary",
+  "section_break_ojza",
+  "http_status_code",
+  "provider_error_code",
+  "column_break_ompd",
+  "provider_error_message",
+  "response_payload",
+  "request_id",
+  "triggered_by"
+ ],
+ "fields": [
+  {
+   "fieldname": "event_time",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Event Time"
+  },
+  {
+   "fieldname": "event_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Event Type",
+   "options": "CREATE_TSS\nDEPLOY_TSS\nINITIALIZE_TSS\nUPDATE_STATUS\nDISABLE_TSS\nDELETE_TSS\nOTHER"
+  },
+  {
+   "fieldname": "provider_action",
+   "fieldtype": "Data",
+   "label": "Provider Action"
+  },
+  {
+   "fieldname": "status_before",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Status Before"
+  },
+  {
+   "fieldname": "status_after",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Status After"
+  },
+  {
+   "fieldname": "column_break_qfah",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "message_summary",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Message Summary"
+  },
+  {
+   "fieldname": "section_break_ojza",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "http_status_code",
+   "fieldtype": "Int",
+   "label": "HTTP Status"
+  },
+  {
+   "fieldname": "provider_error_code",
+   "fieldtype": "Data",
+   "label": "Error Code"
+  },
+  {
+   "fieldname": "column_break_ompd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "provider_error_message",
+   "fieldtype": "Small Text",
+   "label": "Error Message"
+  },
+  {
+   "fieldname": "response_payload",
+   "fieldtype": "Code",
+   "label": "Response Payload",
+   "options": "JSON"
+  },
+  {
+   "fieldname": "request_id",
+   "fieldtype": "Data",
+   "label": "Request ID"
+  },
+  {
+   "fieldname": "triggered_by",
+   "fieldtype": "Link",
+   "label": "Triggered By",
+   "options": "User"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-12-04 01:48:22.473234",
+ "modified_by": "Administrator",
+ "module": "ERPNext TSE",
+ "name": "TSE Security Device Provider Event",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
