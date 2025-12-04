@@ -147,7 +147,7 @@ class FiskalyProvider(BaseTSEProvider):
         frappe.db.commit()
 
     # ---------------------------------------------------------------------
-    # Auth flow (basically dein bisheriger Code, aber auf self.doc)
+    # Auth flow
     # ---------------------------------------------------------------------
 
     def run_auth_request(self) -> dict:
@@ -317,6 +317,38 @@ class FiskalyProvider(BaseTSEProvider):
             "organization_id": claims.get("organization_id"),
             "access_token_expires_at": access_exp,
         }
+    
+    def authenticate_admin(self, tss_id: str, admin_pin: str) -> dict[str, Any]:
+        """Admin-Authentifizierung für eine TSS (authenticateAdmin)."""
+        payload = {
+            "admin_pin": admin_pin,
+        }
+
+        return self._request_json(
+            method="POST",
+            path=f"/tss/{tss_id}/admin/auth",
+            json=payload,
+        )
+    
+    def change_admin_pin(self, tss_id: str, admin_puk: str, new_admin_pin: str) -> dict[str, Any]:
+        """Admin-PIN mit Admin-PUK setzen oder zurücksetzen (changeAdminPin). Auch für die Initialisierung einer erstellten TSS"""
+        payload = {
+            "admin_puk": admin_puk,
+            "new_admin_pin": new_admin_pin,
+        }
+
+        return self._request_json(
+            method="PATCH",
+            path=f"/tss/{tss_id}/admin",
+            json=payload,
+        )
+    
+    def logout_admin(self, tss_id: str) -> dict[str, Any]:
+        """Admin-Session explizit beenden (logoutAdmin)."""
+        return self._request_json(
+            method="POST",
+            path=f"/tss/{tss_id}/admin/logout",
+        )
 
     # ---------------------------------------------------------------------
     # Provider interface implementation
@@ -447,7 +479,7 @@ class FiskalyProvider(BaseTSEProvider):
         }
 
         data = self._request_json(
-            method="PUT",
+            method="PATCH",
             path=f"/tss/{tss_id}",
             json=payload,
         )
@@ -460,7 +492,7 @@ class FiskalyProvider(BaseTSEProvider):
         }
 
         data = self._request_json(
-            method="PUT",
+            method="PATCH",
             path=f"/tss/{tss_id}",
             json=payload,
         )
