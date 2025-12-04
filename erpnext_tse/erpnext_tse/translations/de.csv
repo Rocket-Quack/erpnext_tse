@@ -1,0 +1,24 @@
+source_string,translated_string,context
+TSE Security Device,TSE Sicherheitseinrichtung,
+TSE Client,TSE Kasse,
+Internal Name,Interner Name,
+Company,Firma,
+Settings,Einstellungen,
+Create TSS at Provider,TSE beim Anbieter anlegen,
+Initialize TSS,TSE initialisieren,
+TSE connection successful,TSE-Verbindung erfolgreich,
+TSE connection failed,TSE-Verbindung fehlgeschlagen,
+POS Profile,Kassenprofil,
+TSE Provider,TSE Provider
+Only intended for people who know what they are doing.,"Nur für Personen gedacht, die wissen, was Sie tun."
+Development,Entwicklung
+Organization,Organisation
+General,Allgemein
+Activated,Aktivert
+Login details,Zugangsdaten
+TSE Security Device Details,TSE-Sicherheitsvorrichtung Details
+TSE Serial Number,TSE-Seriennummer
+Activated at,Aktiviert um
+Deactivated at,Deaktiviert am
+Provider Responses,Ergebnisse des Anbieters
+Provider Events,Provider Events
