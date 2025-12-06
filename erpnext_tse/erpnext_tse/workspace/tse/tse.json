@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"roYlWlP9q7\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h2\\\">TSE Integration</span>\",\"col\":12}},{\"id\":\"EQJVDJGM4M\",\"type\":\"paragraph\",\"data\":{\"text\":\"#TODO\",\"col\":12}},{\"id\":\"eV3KXw-jWN\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"KTa-cMiu7U\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"TSE Settings\",\"col\":5}},{\"id\":\"SYVqqUnuMH\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"TSE Security Device\",\"col\":6}}]",
+ "content": "[{\"id\":\"roYlWlP9q7\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h2\\\">TSE Integration</span>\",\"col\":12}},{\"id\":\"EQJVDJGM4M\",\"type\":\"paragraph\",\"data\":{\"text\":\"#TODO\",\"col\":12}},{\"id\":\"eV3KXw-jWN\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"RooSsjTb_H\",\"type\":\"card\",\"data\":{\"card_name\":\"Settings\",\"col\":4}},{\"id\":\"sSurrbVati\",\"type\":\"card\",\"data\":{\"card_name\":\"Maintenance\",\"col\":4}}]",
  "creation": "2025-12-02 23:25:33.970028",
  "custom_blocks": [],
  "docstatus": 0,
@@ -22,9 +22,57 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Settings",
+   "link_count": 1,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "TSE Settings",
+   "link_count": 0,
+   "link_to": "TSE Settings",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Maintenance",
+   "link_count": 2,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "TSE Security Device",
+   "link_count": 0,
+   "link_to": "TSE Security Device",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "TSE Client",
+   "link_count": 0,
+   "link_to": "TSE Client",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2025-12-06 14:19:35.092602",
+ "modified": "2025-12-06 17:26:54.796386",
  "modified_by": "Administrator",
  "module": "ERPNext TSE",
  "name": "TSE",
@@ -35,22 +83,6 @@
  "quick_lists": [],
  "roles": [],
  "sequence_id": 17.0,
- "shortcuts": [
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "TSE Settings",
-   "link_to": "TSE Settings",
-   "type": "DocType"
-  },
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "TSE Security Device",
-   "link_to": "TSE Security Device",
-   "stats_filter": "[]",
-   "type": "DocType"
-  }
- ],
+ "shortcuts": [],
  "title": "TSE"
 }
