@@ -1,6 +1,7 @@
 // Copyright (c) 2025, RocketQuackIT and contributors
 // For license information, please see license.txt
 
+// FORM SCRIPT (Buttons etc.)
 frappe.ui.form.on("TSE Security Device", {
     refresh(frm) {
         // Provider Events Grid read-only machen
