@@ -497,3 +497,30 @@ class FiskalyProvider(BaseTSEProvider):
             json=payload,
         )
         return data
+    
+    # ---------------------------------------------------------------------
+    # High-Level: Client-Operationen für TSE Client
+    # ---------------------------------------------------------------------
+
+    def create_client(self, tss_id: str, metadata: dict) -> dict[str, Any]:
+        """Client bei Fiskaly für eine TSS anlagen
+        Der Client bekommt eine UUIDv4 zugeordnet die beim anlegen erzeugt wird
+        """
+        # UUID für einen Client generieren
+        client_id = str(uuid.uuid4())
+        # UUID für die Serial Number des Clients anlegen
+        serial_number = str(uuid.uuid4())
+
+        payload: dict[str, Any] = {
+            "serial_number": serial_number,
+        }
+
+        if metadata:
+            payload["metadata"] = metadata
+
+        data = self._request_json(
+            method="PUT",
+            path=f"/tss/{tss_id}/client/{client_id}",
+            json=payload,
+        )
+        return data

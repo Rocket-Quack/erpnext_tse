@@ -6,6 +6,7 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "details_tab",
   "sb_client_info",
   "client_name",
   "column_break_udvi",
@@ -16,8 +17,11 @@
   "pos_profile",
   "tse_client_info_section",
   "client_id",
+  "serial_number",
   "column_break_qjgf",
-  "status"
+  "client_status",
+  "provider_responses_tab",
+  "provider_events"
  ],
  "fields": [
   {
@@ -32,7 +36,8 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Client Name",
-   "reqd": 1
+   "reqd": 1,
+   "unique": 1
   },
   {
    "fieldname": "column_break_udvi",
@@ -86,17 +91,39 @@
   },
   {
    "default": "DRAFT",
-   "fieldname": "status",
+   "fieldname": "client_status",
    "fieldtype": "Select",
-   "label": "Status",
-   "options": "DRAFT\nCREATED\nINITIALIZED\nDISABLED\nERROR",
+   "label": "Client Status",
+   "options": "DRAFT\nDEREGISTERED\nREGISTERED\nERROR",
    "read_only": 1
+  },
+  {
+   "fieldname": "provider_responses_tab",
+   "fieldtype": "Tab Break",
+   "label": "Events"
+  },
+  {
+   "fieldname": "provider_events",
+   "fieldtype": "Table",
+   "label": "Provider Events",
+   "options": "TSE Client Provider Event"
+  },
+  {
+   "fieldname": "serial_number",
+   "fieldtype": "Data",
+   "label": "Serial Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Details"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-06 17:11:57.614436",
+ "modified": "2025-12-06 18:40:05.608268",
  "modified_by": "Administrator",
  "module": "ERPNext TSE",
  "name": "TSE Client",
