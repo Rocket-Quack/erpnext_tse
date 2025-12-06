@@ -7,7 +7,7 @@
  "doctype": "Workspace",
  "for_user": "",
  "hide_custom": 0,
- "icon": "setting-gear",
+ "icon": "tse-app",
  "idx": 0,
  "indicator_color": "",
  "is_hidden": 0,
@@ -24,7 +24,7 @@
    "type": "Link"
   }
  ],
- "modified": "2025-12-03 23:57:21.564545",
+ "modified": "2025-12-06 14:19:35.092602",
  "modified_by": "Administrator",
  "module": "ERPNext TSE",
  "name": "TSE",
@@ -34,7 +34,7 @@
  "public": 1,
  "quick_lists": [],
  "roles": [],
- "sequence_id": 18.0,
+ "sequence_id": 17.0,
  "shortcuts": [
   {
    "color": "Grey",

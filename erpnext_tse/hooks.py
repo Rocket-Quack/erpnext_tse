@@ -51,7 +51,9 @@ app_license = "gpl-3.0"
 # Svg Icons
 # ------------------
 # include app icons in desk
-# app_include_icons = "erpnext_tse/public/icons.svg"
+app_include_icons = [
+    "erpnext_tse/icons/icon_tse_app.svg"
+]
 
 # Home Pages
 # ----------
