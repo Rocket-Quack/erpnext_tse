@@ -91,7 +91,7 @@
   {
    "fieldname": "provider_responses_tab",
    "fieldtype": "Tab Break",
-   "label": "Provider Responses"
+   "label": "Events"
   },
   {
    "fieldname": "provider_events",
@@ -125,7 +125,7 @@
  ],
  "grid_page_length": 50,
  "links": [],
- "modified": "2025-12-04 17:24:33.755733",
+ "modified": "2025-12-06 17:22:51.303774",
  "modified_by": "Administrator",
  "module": "ERPNext TSE",
  "name": "TSE Security Device",

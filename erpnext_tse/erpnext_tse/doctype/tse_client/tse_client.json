@@ -85,18 +85,18 @@
    "fieldtype": "Column Break"
   },
   {
-   "default": "Draft",
+   "default": "DRAFT",
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Draft\nCreated\nInitialized\nDisabled",
+   "options": "DRAFT\nCREATED\nINITIALIZED\nDISABLED\nERROR",
    "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-06 17:03:22.232180",
+ "modified": "2025-12-06 17:11:57.614436",
  "modified_by": "Administrator",
  "module": "ERPNext TSE",
  "name": "TSE Client",
