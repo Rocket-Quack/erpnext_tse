@@ -66,7 +66,33 @@ frappe.ui.form.on('TSE Client', {
             );
         }
 
-        //TODO DEREGISTERED Status setzen eines Clients
+        // 2) Client beim Provider deregistrieren → nur in Status REGISTERED
+        if (frm.doc.client_status === "REGISTERED") {
+            frm.add_custom_button(
+                __("Deregister Client at Provider"),
+                () => {
+                    run_doc_method(
+                        "deregister_client_at_provider",
+                        __("Deregistering Client at provider...")
+                    );
+                },
+                group
+            );
+        }
+
+        // 3) Client beim Provider wieder registrieren → nur in Status DEREGISTERED
+        if (frm.doc.client_status === "DEREGISTERED") {
+            frm.add_custom_button(
+                __("Register Client at Provider"),
+                () => {
+                    run_doc_method(
+                        "register_client_at_provider",
+                        __("Registering Client at provider...")
+                    );
+                },
+                group
+            );
+        }
 
     },
 

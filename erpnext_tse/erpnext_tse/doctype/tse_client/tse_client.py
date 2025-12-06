@@ -133,8 +133,8 @@ class TSEClient(Document):
             raise
 
         # Erfolgreich angelegt → REGISTERED
-        self.client_id = resp.get("client_id") or resp.get("id")
-        self.client_status = "REGISTERED"
+        self.client_id = resp.get("_id")
+        self.client_status = resp.get("state")
         self.serial_number = resp.get("serial_number")
         
         self.log_provider_event(
@@ -145,6 +145,132 @@ class TSEClient(Document):
             status_after=self.client_status,
             message_summary=_(
                 "Client {0} created at provider for TSS {1}"
+            ).format(self.name, tss.name),
+		)
+
+        # Dokument speichern
+        self.save(ignore_permissions=True)
+        frappe.db.commit()
+
+    @frappe.whitelist()
+    def deregister_client_at_provider(self):
+        """
+        TSE Client wird auf den Status "DEREGISTERED" gesetzt somit für die Verwendung der TSS blockiert
+        Nur erlaubt im Status 'REGISTERED' && Benötigt eine verknüpfte TSE Security Device mit tss_id sowie eine regestrierte client_id
+        """
+        self.ensure_tse_enabled()
+
+        if self.client_status != "REGISTERED":
+            frappe.throw(
+                _("Client can only be deregistered at provider when status is 'REGISTERED'. "
+                  "Current status: {0}").format(self.client_status)
+            )
+
+        # Zugehörige TSS laden
+        tss = frappe.get_doc("TSE Security Device", self.tse_security_device)
+
+        settings = frappe.get_single("TSE Settings")
+        provider = get_tse_provider(settings)
+
+        old_status = self.client_status
+
+        try:
+            resp = provider.deregister_client(
+                tss_id=tss.tss_id,
+                client_id=self.client_id
+            )
+
+        except Exception as e:
+            self.status = "ERROR"
+            self.log_provider_event(
+                event_type="DEREGISTER_CLIENT_FAILED",
+                provider_action="deregister_client",
+                resp={"error": {"message": str(e)}},
+                status_before=old_status,
+                status_after=self.client_status,
+                message_summary=_(
+                    "Error while deregistering client at provider for TSE Client {0}"
+                ).format(self.name),
+            )
+
+            self.save(ignore_permissions=True)
+            frappe.db.commit()
+            raise
+
+        # Erfolgreich Client deregestriert → DEREGISTER
+        self.client_status = resp.get("state")
+        
+        self.log_provider_event(
+            event_type="DEREGISTER_CLIENT",
+            provider_action="deregister_client",
+            resp=resp,
+            status_before=old_status,
+            status_after=self.client_status,
+            message_summary=_(
+                "Client {0} deregistered at provider for TSS {1}"
+            ).format(self.name, tss.name),
+		)
+
+        # Dokument speichern
+        self.save(ignore_permissions=True)
+        frappe.db.commit()
+
+    @frappe.whitelist()
+    def register_client_at_provider(self):
+        """
+        TSE Client wird auf den Status "REGISTERED" gesetzt somit für die Verwendung der TSS wieder verfügbar
+        Nur erlaubt im Status 'DEREGISTERED' && Benötigt eine verknüpfte TSE Security Device mit tss_id sowie eine regestrierte client_id
+        """
+        self.ensure_tse_enabled()
+
+        if self.client_status != "DEREGISTERED":
+            frappe.throw(
+                _("Client can only be registered at provider when status is 'DEREGISTERED'. "
+                  "Current status: {0}").format(self.client_status)
+            )
+
+        # Zugehörige TSS laden
+        tss = frappe.get_doc("TSE Security Device", self.tse_security_device)
+
+        settings = frappe.get_single("TSE Settings")
+        provider = get_tse_provider(settings)
+
+        old_status = self.client_status
+
+        try:
+            resp = provider.register_client(
+                tss_id=tss.tss_id,
+                client_id=self.client_id
+            )
+
+        except Exception as e:
+            self.status = "ERROR"
+            self.log_provider_event(
+                event_type="REGISTER_CLIENT_FAILED",
+                provider_action="register_client",
+                resp={"error": {"message": str(e)}},
+                status_before=old_status,
+                status_after=self.client_status,
+                message_summary=_(
+                    "Error while registering client at provider for TSE Client {0}"
+                ).format(self.name),
+            )
+
+            self.save(ignore_permissions=True)
+            frappe.db.commit()
+            raise
+
+        # Erfolgreich Client regestriert → REGISTER
+        self.client_status = resp.get("state")
+        
+        self.log_provider_event(
+            event_type="REGISTER_CLIENT",
+            provider_action="register_client",
+            resp=resp,
+            status_before=old_status,
+            status_after=self.client_status,
+            message_summary=_(
+                "Client {0} registered at provider for TSS {1}"
             ).format(self.name, tss.name),
 		)
 

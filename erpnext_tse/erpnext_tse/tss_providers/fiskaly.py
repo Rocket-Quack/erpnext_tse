@@ -524,3 +524,35 @@ class FiskalyProvider(BaseTSEProvider):
             json=payload,
         )
         return data
+
+    def deregister_client(self, tss_id: str, client_id: str) -> dict[str, Any]:
+        """
+        Client wird auf den Status "DEREGISTERED" gesetzt und kann somit eine TSS nicht mehr verwenden
+        """
+
+        payload: dict[str, Any] = {
+            "state": "DEREGISTERED",
+        }
+
+        data = self._request_json(
+            method="PATCH",
+            path=f"/tss/{tss_id}/client/{client_id}",
+            json=payload,
+        )
+        return data
+        
+    def register_client(self, tss_id: str, client_id: str) -> dict[str, Any]:
+        """
+        Client wird auf den Status "REGISTERED" gesetzt und kann somit eine TSS wieder verwenden
+        """
+
+        payload: dict[str, Any] = {
+            "state": "REGISTERED",
+        }
+
+        data = self._request_json(
+            method="PATCH",
+            path=f"/tss/{tss_id}/client/{client_id}",
+            json=payload,
+        )
+        return data
