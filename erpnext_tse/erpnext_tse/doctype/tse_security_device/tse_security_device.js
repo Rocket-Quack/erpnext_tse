@@ -79,13 +79,13 @@ frappe.ui.form.on("TSE Security Device", {
         }
 
         // 4) TSS deaktivieren → nur in Status INITIALIZED + tss_id vorhanden
-        if (frm.doc.tss_status === "INITIALIZED" && frm.doc.tss_id) {
+        if (["UNINITIALIZED", "INITIALIZED"].includes(frm.doc.tss_status) && frm.doc.tss_id) {
             frm.add_custom_button(
-                __("Deactivate TSS at Provider"),
+                __("Disable TSS at Provider"),
                 () => {
                     run_doc_method(
-                        "deactivate_tss_at_provider",
-                        __("Deactivating TSS at provider...")
+                        "disable_tss_at_provider",
+                        __("Disabling TSS at provider...")
                     );
                 },
                 group

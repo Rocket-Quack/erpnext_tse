@@ -485,7 +485,7 @@ class FiskalyProvider(BaseTSEProvider):
         )
         return data
 
-    def deactivate_tss(self, tss_id: str) -> dict[str, Any]:
+    def disable_tss(self, tss_id: str) -> dict[str, Any]:
         """TSS deaktivieren (State → DISABLED)."""
         payload = {
             "state": "DISABLED",
