@@ -85,7 +85,11 @@ app_include_icons = [
 # ------------
 
 # before_install = "erpnext_tse.install.before_install"
-# after_install = "erpnext_tse.install.after_install"
+after_install = "erpnext_tse.install.after_install"
+
+# Migration
+# ------------
+after_migrate = "erpnext_tse.install.after_migrate"
 
 # Uninstallation
 # ------------

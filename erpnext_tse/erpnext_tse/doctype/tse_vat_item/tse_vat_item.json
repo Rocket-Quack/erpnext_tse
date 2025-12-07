@@ -1,0 +1,52 @@
+{
+ "actions": [],
+ "autoname": "TSE-TX-VAT-.YYYY.-.MM.-.######.",
+ "creation": "2025-12-07 00:59:34.238267",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "vat_rate",
+  "column_break_ueqn",
+  "amount"
+ ],
+ "fields": [
+  {
+   "fieldname": "vat_rate",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "VAT Rate",
+   "options": "TSE VAT Rate",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_ueqn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Amount",
+   "options": "Company:company",
+   "precision": "2",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-12-07 02:18:57.635633",
+ "modified_by": "Administrator",
+ "module": "ERPNext TSE",
+ "name": "TSE VAT Item",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

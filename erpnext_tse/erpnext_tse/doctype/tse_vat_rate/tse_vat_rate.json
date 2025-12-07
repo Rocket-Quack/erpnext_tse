@@ -1,0 +1,66 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "TSE-TX-VAT-RATE-.YYYY.-.MM.-.######.",
+ "creation": "2025-12-07 01:09:32.432953",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_zjyh",
+  "vat_rate_code",
+  "column_break_njdp",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_zjyh",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "vat_rate_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "VAT Rate Code",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_njdp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Data",
+   "label": "Description",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-12-07 02:24:07.162440",
+ "modified_by": "Administrator",
+ "module": "ERPNext TSE",
+ "name": "TSE VAT Rate",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
