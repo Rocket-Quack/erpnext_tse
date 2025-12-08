@@ -34,7 +34,7 @@ class TSEClient(Document):
         if not getattr(settings, "enabled", None):
             frappe.throw(
                 _("TSE functionality is not enabled in TSE Settings. "
-                  "Please enable it before creating a TSE Security Device.")
+                  "Please enable it before creating a TSE Client.")
             )
 
     # ---------- Provider-Event-Historie ----------

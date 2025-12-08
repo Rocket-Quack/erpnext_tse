@@ -143,13 +143,11 @@ after_migrate = "erpnext_tse.install.after_migrate"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+    "POS Invoice": {
+        "before_submit": "erpnext_tse.erpnext_tse.doctype.tse_transaction.tse_transaction.create_tse_transaction_for_pos_invoice"
+    }
+}
 
 # Scheduled Tasks
 # ---------------

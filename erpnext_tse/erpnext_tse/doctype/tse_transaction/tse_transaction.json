@@ -19,6 +19,10 @@
   "status",
   "start_time",
   "end_time",
+  "section_break_rrov",
+  "signature_counter",
+  "column_break_liww",
+  "transaction_number",
   "section_break_lyxy",
   "receipt_type",
   "column_break_arfg",
@@ -151,7 +155,7 @@
   },
   {
    "fieldname": "qr_code_data",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "label": "QR Code Data"
   },
   {
@@ -185,13 +189,30 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "section_break_rrov",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "signature_counter",
+   "fieldtype": "Data",
+   "label": "Signature Counter"
+  },
+  {
+   "fieldname": "column_break_liww",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "transaction_number",
+   "fieldtype": "Data",
+   "label": "Transaction Number"
   }
  ],
  "grid_page_length": 50,
- "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-12-07 02:32:28.092739",
+ "modified": "2025-12-08 20:28:14.868919",
  "modified_by": "Administrator",
  "module": "ERPNext TSE",
  "name": "TSE Transaction",

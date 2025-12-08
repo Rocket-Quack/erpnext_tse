@@ -2,16 +2,19 @@
 # For license information, please see LICENSE
 
 import frappe
+from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 def after_install():
     create_default_vat_rates()
     create_default_payment_types()
+    create_custom_fields_for_erpnext()
 
 
 def after_migrate():
     # Defaults werden bei Bedarf bei Migrate wieder ausgeführt
     create_default_vat_rates()
     create_default_payment_types()
+    create_custom_fields_for_erpnext()
 
 
 def create_default_vat_rates():
@@ -46,3 +49,25 @@ def create_default_payment_types():
                 "description": pt["description"],
                 "is_active": 1,
             }).insert(ignore_permissions=True)
+
+
+def create_custom_fields_for_erpnext():
+    """
+    POS Profile bekommt ein neues Feld im Standard DocType wo der TSE CLient festgelegt wird
+    """
+
+    custom_fields = {
+        "POS Profile": [
+            dict(
+                fieldname="tse_client",
+                label="TSE Client",
+                fieldtype="Link",
+                options="TSE Client",
+                insert_after="customer",
+                reqd=1,
+            ),
+        ],
+    }
+
+    # create_custom_fields um nichts doppelt anzulegen
+    create_custom_fields(custom_fields, ignore_validate=True)

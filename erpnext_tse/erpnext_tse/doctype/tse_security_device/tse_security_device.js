@@ -1,5 +1,5 @@
 // Copyright (c) 2025, RocketQuackIT and contributors
-// For license information, please see license.txt
+// For license information, please see LICENSE
 
 // FORM SCRIPT (Buttons etc.)
 frappe.ui.form.on("TSE Security Device", {
