@@ -85,7 +85,11 @@ app_include_icons = [
 # ------------
 
 # before_install = "erpnext_tse.install.before_install"
-# after_install = "erpnext_tse.install.after_install"
+after_install = "erpnext_tse.install.after_install"
+
+# Migration
+# ------------
+after_migrate = "erpnext_tse.install.after_migrate"
 
 # Uninstallation
 # ------------
@@ -139,13 +143,14 @@ app_include_icons = [
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+    "POS Invoice": {
+        "before_submit": [ 
+            "erpnext_tse.erpnext_tse.doctype.tse_transaction.tse_transaction.create_tse_transaction_for_pos_invoice",
+            "erpnext_tse.erpnext_tse.pos.pos_invoice.pos_invoice_hooks.ensure_tse_transaction_present_and_finished",
+        ]
+    }
+}
 
 # Scheduled Tasks
 # ---------------

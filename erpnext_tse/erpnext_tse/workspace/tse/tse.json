@@ -1,6 +1,11 @@
 {
- "charts": [],
- "content": "[{\"id\":\"roYlWlP9q7\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h2\\\">TSE Integration</span>\",\"col\":12}},{\"id\":\"EQJVDJGM4M\",\"type\":\"paragraph\",\"data\":{\"text\":\"#TODO\",\"col\":12}},{\"id\":\"eV3KXw-jWN\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"KTa-cMiu7U\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"TSE Settings\",\"col\":5}},{\"id\":\"SYVqqUnuMH\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"TSE Security Device\",\"col\":6}}]",
+ "charts": [
+  {
+   "chart_name": "TSE Transactions",
+   "label": "TSE Transactions"
+  }
+ ],
+ "content": "[{\"id\":\"roYlWlP9q7\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h2\\\">TSE Integration</span>\",\"col\":12}},{\"id\":\"K3DICBD0iJ\",\"type\":\"onboarding\",\"data\":{\"onboarding_name\":\"TSE Setup\",\"col\":12}},{\"id\":\"24JVoJEafg\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"8INt7DZf7z\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"TSE Transactions\",\"col\":6}},{\"id\":\"OHamQ4jfcb\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"TSE Clients\",\"col\":3}},{\"id\":\"3DfxTzB7TA\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"TSE Security Device\",\"col\":3}},{\"id\":\"H9MY6Fkekr\",\"type\":\"chart\",\"data\":{\"chart_name\":\"TSE Transactions\",\"col\":12}},{\"id\":\"eV3KXw-jWN\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"RooSsjTb_H\",\"type\":\"card\",\"data\":{\"card_name\":\"Settings\",\"col\":4}},{\"id\":\"sSurrbVati\",\"type\":\"card\",\"data\":{\"card_name\":\"Maintenance\",\"col\":4}},{\"id\":\"v5O4W6IgIx\",\"type\":\"card\",\"data\":{\"card_name\":\"Transactions\",\"col\":4}}]",
  "creation": "2025-12-02 23:25:33.970028",
  "custom_blocks": [],
  "docstatus": 0,
@@ -22,35 +27,99 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Settings",
+   "link_count": 1,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "TSE Settings",
+   "link_count": 0,
+   "link_to": "TSE Settings",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Maintenance",
+   "link_count": 2,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "TSE Security Device",
+   "link_count": 0,
+   "link_to": "TSE Security Device",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "TSE Client",
+   "link_count": 0,
+   "link_to": "TSE Client",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Transactions",
+   "link_count": 1,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "TSE Transaction",
+   "link_count": 0,
+   "link_to": "TSE Transaction",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2025-12-06 14:19:35.092602",
+ "modified": "2025-12-09 16:11:58.811392",
  "modified_by": "Administrator",
  "module": "ERPNext TSE",
  "name": "TSE",
- "number_cards": [],
+ "number_cards": [
+  {
+   "label": "TSE Clients",
+   "number_card_name": "TSE Clients"
+  },
+  {
+   "label": "TSE Security Device",
+   "number_card_name": "TSE Security Device"
+  },
+  {
+   "label": "TSE Transactions",
+   "number_card_name": "TSE Transactions"
+  }
+ ],
  "owner": "Administrator",
  "parent_page": "",
  "public": 1,
  "quick_lists": [],
  "roles": [],
  "sequence_id": 17.0,
- "shortcuts": [
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "TSE Settings",
-   "link_to": "TSE Settings",
-   "type": "DocType"
-  },
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "TSE Security Device",
-   "link_to": "TSE Security Device",
-   "stats_filter": "[]",
-   "type": "DocType"
-  }
- ],
+ "shortcuts": [],
  "title": "TSE"
 }

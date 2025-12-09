@@ -1,8 +1,23 @@
 // Copyright (c) 2025, RocketQuackIT and contributors
-// For license information, please see LICENSE
+// For license information, please see license.txt
 
-// FORM SCRIPT (Buttons etc.)
-frappe.ui.form.on("TSE Security Device", {
+frappe.ui.form.on('TSE Client', {
+    setup(frm) {
+        // Nur INITIALIZED TSE Security Devices anzeigen
+        frm.set_query('tse_security_device', () => {
+            const filters = {
+                tss_status: 'INITIALIZED',
+            };
+
+            // Zusätzlich nach Company filtern, falls gesetzt
+            if (frm.doc.company) {
+                filters.company = frm.doc.company;
+            }
+
+            return { filters };
+        });
+    },
+
     refresh(frm) {
         // Provider Events Grid read-only machen
         const grid = frm.fields_dict.provider_events && frm.fields_dict.provider_events.grid;
@@ -17,7 +32,7 @@ frappe.ui.form.on("TSE Security Device", {
             return;
         }
 
-        const group = __("TSE Actions");
+        const group = __("TSE Client");
 
         // Helper für Doc-Method-Aufrufe über den neuen, vollqualifizierten Pfad
         function run_doc_method(method_name, freeze_message) {
@@ -25,7 +40,7 @@ frappe.ui.form.on("TSE Security Device", {
                 method: "frappe.handler.run_doc_method",
                 args: {
                     docs: frm.doc,       // komplettes Doc JSON
-                    method: method_name, // z.B. "create_tss_at_provider"
+                    method: method_name, // z.B. "create_client_at_provider"
                 },
                 freeze: true,
                 freeze_message: freeze_message,
@@ -37,60 +52,48 @@ frappe.ui.form.on("TSE Security Device", {
             });
         }
 
-        // 1) TSS beim Provider anlegen → nur in Status DRAFT
-        if (frm.doc.tss_status === "DRAFT") {
+        // 1) Client beim Provider anlegen → nur in Status DRAFT
+        if (frm.doc.client_status === "DRAFT") {
             frm.add_custom_button(
-                __("Create TSS at Provider"),
+                __("Create Client at Provider"),
                 () => {
                     run_doc_method(
-                        "create_tss_at_provider",
-                        __("Creating TSS at provider...")
+                        "create_client_at_provider",
+                        __("Creating Client at provider...")
                     );
                 },
                 group
             );
         }
 
-        // 2) TSS deployen → nur in Status CREATED + tss_id vorhanden
-        if (frm.doc.tss_status === "CREATED" && frm.doc.tss_id) {
+        // 2) Client beim Provider deregistrieren → nur in Status REGISTERED
+        if (frm.doc.client_status === "REGISTERED") {
             frm.add_custom_button(
-                __("Deploy TSS at Provider"),
+                __("Deregister Client at Provider"),
                 () => {
                     run_doc_method(
-                        "deploy_tss_at_provider",
-                        __("Deploying TSS at provider...")
+                        "deregister_client_at_provider",
+                        __("Deregistering Client at provider...")
                     );
                 },
                 group
             );
         }
 
-        // 3) TSS initialisieren → nur in Status UNINITIALIZED + tss_id vorhanden
-        if (frm.doc.tss_status === "UNINITIALIZED" && frm.doc.tss_id) {
+        // 3) Client beim Provider wieder registrieren → nur in Status DEREGISTERED
+        if (frm.doc.client_status === "DEREGISTERED") {
             frm.add_custom_button(
-                __("Initialize TSS at Provider"),
+                __("Register Client at Provider"),
                 () => {
                     run_doc_method(
-                        "initialize_tss_at_provider",
-                        __("Initializing TSS at provider...")
+                        "register_client_at_provider",
+                        __("Registering Client at provider...")
                     );
                 },
                 group
             );
         }
 
-        // 4) TSS deaktivieren → nur in Status INITIALIZED + tss_id vorhanden
-        if (["UNINITIALIZED", "INITIALIZED"].includes(frm.doc.tss_status) && frm.doc.tss_id) {
-            frm.add_custom_button(
-                __("Disable TSS at Provider"),
-                () => {
-                    run_doc_method(
-                        "disable_tss_at_provider",
-                        __("Disabling TSS at provider...")
-                    );
-                },
-                group
-            );
-        }
     },
+
 });

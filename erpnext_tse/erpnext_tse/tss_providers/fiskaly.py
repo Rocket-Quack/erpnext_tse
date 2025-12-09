@@ -497,3 +497,167 @@ class FiskalyProvider(BaseTSEProvider):
             json=payload,
         )
         return data
+    
+    # ---------------------------------------------------------------------
+    # High-Level: Client-Operationen für TSE Client
+    # ---------------------------------------------------------------------
+
+    def create_client(self, tss_id: str, metadata: dict) -> dict[str, Any]:
+        """Client bei Fiskaly für eine TSS anlagen
+        Der Client bekommt eine UUIDv4 zugeordnet die beim anlegen erzeugt wird
+        """
+        # UUID für einen Client generieren
+        client_id = str(uuid.uuid4())
+        # UUID für die Serial Number des Clients anlegen
+        serial_number = str(uuid.uuid4())
+
+        payload: dict[str, Any] = {
+            "serial_number": serial_number,
+        }
+
+        if metadata:
+            payload["metadata"] = metadata
+
+        data = self._request_json(
+            method="PUT",
+            path=f"/tss/{tss_id}/client/{client_id}",
+            json=payload,
+        )
+        return data
+
+    def deregister_client(self, tss_id: str, client_id: str) -> dict[str, Any]:
+        """
+        Client wird auf den Status "DEREGISTERED" gesetzt und kann somit eine TSS nicht mehr verwenden
+        """
+
+        payload: dict[str, Any] = {
+            "state": "DEREGISTERED",
+        }
+
+        data = self._request_json(
+            method="PATCH",
+            path=f"/tss/{tss_id}/client/{client_id}",
+            json=payload,
+        )
+        return data
+        
+    def register_client(self, tss_id: str, client_id: str) -> dict[str, Any]:
+        """
+        Client wird auf den Status "REGISTERED" gesetzt und kann somit eine TSS wieder verwenden
+        """
+
+        payload: dict[str, Any] = {
+            "state": "REGISTERED",
+        }
+
+        data = self._request_json(
+            method="PATCH",
+            path=f"/tss/{tss_id}/client/{client_id}",
+            json=payload,
+        )
+        return data
+    
+
+    # ---------------------------------------------------------------------
+    # High-Level: Transaction operations (SIGN DE upsertTransaction)
+    # ---------------------------------------------------------------------
+
+    def upsert_transaction(
+        self,
+        tss_id: str,
+        tx_id: str,
+        tx_revision: int,
+        body: dict[str, Any],
+    ) -> dict[str, Any]:
+        """
+        Low-level Wrapper upsertTransaction.
+        Mit dieser werden Transaktionen am ende angelegt oder auch aktualisiert/beendet
+        """
+
+        return self._request_json(
+            method="PUT",
+            path=f"/tss/{tss_id}/tx/{tx_id}?tx_revision={tx_revision}",
+            json=body,
+        )
+    
+    def start_transaction(
+        self,
+        tss_id: str,
+        client_id: str,
+        tx_revision: int,
+    ) -> dict[str, Any]:
+        """
+        Transaktion starten (state=ACTIVE, tx_revision=1)
+        Hinweis laut SIGN DE V2: Beim Start sollen type und data leer sein
+        DSFinV-K-Vorgabe
+        """
+
+        # UUID für die Transaction generieren dient als ID
+        tx_id = str(uuid.uuid4())
+
+        body: dict[str, Any] = {
+            "state": "ACTIVE",
+            "client_id": client_id,
+        }
+
+        return self.upsert_transaction(
+            tss_id=tss_id,
+            tx_id=tx_id,
+            tx_revision=tx_revision,
+            body=body,
+        )
+    
+    def finish_transaction(
+        self,
+        tss_id: str,
+        tx_revision: int,
+        tx_id: str,
+        client_id: str,
+        schema: dict[str, Any],
+        state: str = "FINISHED",
+    ) -> dict[str, Any]:
+        """
+        Transaktion beenden
+        State=FINISHED
+        tx_revision muss gegenüber dem Start-Aufruf erhöht sein (Start=1 -> Finish=2) Fortlaufender Zähler für eine Transaktion
+        """
+        body: dict[str, Any] = {
+            "schema": schema,
+            "state": state,
+            "client_id": client_id,
+        }
+
+        return self.upsert_transaction(
+            tss_id=tss_id,
+            tx_revision=tx_revision,
+            tx_id=tx_id,
+            body=body,
+        )
+    
+    #TODO
+    def cancel_transaction(
+        self,
+        tss_id: str,
+        tx_id: str,
+        tx_revision: int,
+        client_id: str,
+        schema: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """
+        Transaktion abbrechen
+        State=CANCELLED
+        Je nach Prozess wird ein leeres oder minimales schema verwendet
+        """
+        body: dict[str, Any] = {
+            "state": "CANCELLED",
+            "client_id": client_id,
+        }
+        if schema is not None:
+            body["schema"] = schema
+
+        return self.upsert_transaction(
+            tss_id=tss_id,
+            tx_id=tx_id,
+            tx_revision=tx_revision,
+            body=body,
+        )

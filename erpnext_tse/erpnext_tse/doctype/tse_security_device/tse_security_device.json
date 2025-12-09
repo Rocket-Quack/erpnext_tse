@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "format:TSE-{#####}",
+ "autoname": "TSE-.#####.",
  "creation": "2025-12-03 22:15:22.545313",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -91,7 +91,7 @@
   {
    "fieldname": "provider_responses_tab",
    "fieldtype": "Tab Break",
-   "label": "Provider Responses"
+   "label": "Events"
   },
   {
    "fieldname": "provider_events",
@@ -125,7 +125,7 @@
  ],
  "grid_page_length": 50,
  "links": [],
- "modified": "2025-12-04 17:24:33.755733",
+ "modified": "2025-12-07 02:17:11.205234",
  "modified_by": "Administrator",
  "module": "ERPNext TSE",
  "name": "TSE Security Device",
@@ -147,7 +147,9 @@
  ],
  "row_format": "Dynamic",
  "rows_threshold_for_grid_search": 20,
+ "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "internal_name"
 }

@@ -1,0 +1,35 @@
+{
+ "allow_roles": [
+  {
+   "role": "System Manager"
+  }
+ ],
+ "creation": "2025-12-09 16:04:32.054367",
+ "docstatus": 0,
+ "doctype": "Module Onboarding",
+ "documentation_url": "https://github.com/Rocket-Quack/erpnext_tse/blob/version-15/docs/guides/de/configuration.md",
+ "idx": 0,
+ "is_complete": 0,
+ "modified": "2025-12-09 16:20:00.276756",
+ "modified_by": "Administrator",
+ "module": "ERPNext TSE",
+ "name": "TSE Setup",
+ "owner": "Administrator",
+ "steps": [
+  {
+   "step": "TSE Einstellungen konfigurieren"
+  },
+  {
+   "step": "TSE Security Device anlegen"
+  },
+  {
+   "step": "TSE Client anlegen"
+  },
+  {
+   "step": "POS Profile zu TSE Client zuweisen"
+  }
+ ],
+ "subtitle": "F\u00fchre diese Schritte aus, um die TSE-Integration zu aktivieren",
+ "success_message": "Die TSE ist vollst\u00e4ndig eingerichtet. POS-Belege erhalten nun erfolgreich eine TSE Signatur",
+ "title": "TSE Einstellungen"
+}
