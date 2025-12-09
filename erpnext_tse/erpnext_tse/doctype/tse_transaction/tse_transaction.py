@@ -185,7 +185,7 @@ def create_tse_transaction_for_pos_invoice(doc, method: str | None = None):
         "transaction_type": tx_type,
         "transaction_id": response.get("_id"),
         "transaction_revision": tx_revision, # Sollte beim anlegen zuerst 1 sein
-        "status": response.get("state"), # Sollte ACTIVE sein
+        "transaction_status": response.get("state"), # Sollte ACTIVE sein
         "start_time": datetime.fromtimestamp(response.get("time_start")),
     })
 
@@ -216,7 +216,7 @@ def create_tse_transaction_for_pos_invoice(doc, method: str | None = None):
     tse_tx = frappe.get_doc("TSE Transaction", tse_tx.name)
 
     # 18. TSE Transactions Daten in Doc nachtragen und speichern
-    tse_tx.status = response.get("state")
+    tse_tx.transaction_status = response.get("state")
     tse_tx.end_time = datetime.fromtimestamp(response.get("time_end"))
     tse_tx.qr_code_data = response.get("qr_code_data")
     tse_tx.transaction_revision = response.get("revision")

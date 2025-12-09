@@ -16,8 +16,8 @@ def ensure_tse_transaction_present_and_finished(doc, method):
 
     tse_doc = frappe.get_doc("TSE Transaction", doc.tse_transaction)
 
-    if getattr(tse_doc, "status", None) and tse_doc.status != "FINISHED":
+    if getattr(tse_doc, "transaction_status", None) and tse_doc.transaction_status != "FINISHED":
         frappe.throw(
-            _("The attached TSE Transaction is not yet finished (Status: {0}).")
-            .format(tse_doc.status)
+            _("The attached TSE Transaction is not yet finished (Transaction status: {0}).")
+            .format(tse_doc.transaction_status)
         )

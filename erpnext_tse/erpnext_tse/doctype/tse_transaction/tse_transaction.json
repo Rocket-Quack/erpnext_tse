@@ -16,7 +16,7 @@
   "transaction_id",
   "transaction_revision",
   "column_break_emjr",
-  "status",
+  "transaction_status",
   "start_time",
   "end_time",
   "section_break_rrov",
@@ -103,13 +103,6 @@
   {
    "fieldname": "column_break_emjr",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "label": "Status",
-   "options": "ACTIVE\nCANCELLED\nFINISHED"
   },
   {
    "fieldname": "start_time",
@@ -206,12 +199,18 @@
    "fieldname": "transaction_number",
    "fieldtype": "Data",
    "label": "Transaction Number"
+  },
+  {
+   "fieldname": "transaction_status",
+   "fieldtype": "Select",
+   "label": "Transaction Status",
+   "options": "ACTIVE\nCANCELLED\nFINISHED"
   }
  ],
  "grid_page_length": 50,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-12-09 14:18:23.351807",
+ "modified": "2025-12-09 15:25:11.207291",
  "modified_by": "Administrator",
  "module": "ERPNext TSE",
  "name": "TSE Transaction",
