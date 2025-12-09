@@ -145,7 +145,10 @@ after_migrate = "erpnext_tse.install.after_migrate"
 
 doc_events = {
     "POS Invoice": {
-        "before_submit": "erpnext_tse.erpnext_tse.doctype.tse_transaction.tse_transaction.create_tse_transaction_for_pos_invoice"
+        "before_submit": [ 
+            "erpnext_tse.erpnext_tse.doctype.tse_transaction.tse_transaction.create_tse_transaction_for_pos_invoice",
+            "erpnext_tse.erpnext_tse.pos.pos_invoice.invoice_hooks.ensure_tse_transaction_present_and_finished",
+        ]
     }
 }
 

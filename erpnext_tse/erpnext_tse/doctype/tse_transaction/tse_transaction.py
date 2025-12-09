@@ -103,21 +103,21 @@ def create_tse_transaction_for_pos_invoice(doc, method: str | None = None):
     hat. Von dort wird der verknüpfte TSE Client sowie dessen Security Device geladen
     """
 
-    # POS Invoice aus dict laden
+    # 1. POS Invoice aus dict laden
     if isinstance(doc, dict):
         doc = frappe.get_doc(doc)
 
-    # Check ob wirklich POS Invoice 
+    # 2. Check ob wirklich POS Invoice 
     if doc.doctype != "POS Invoice":
         return
 
-    # POS Profile holen
+    # 3. POS Profile holen
     if not getattr(doc, "pos_profile", None):
         frappe.throw(_("POS Invoice is missing a POS Profile."))
 
     pos_profile = frappe.get_doc("POS Profile", doc.pos_profile)
 
-    # TSE Client aus POS Profile
+    # 4. TSE Client aus POS Profile
     if not getattr(pos_profile, "tse_client", None):
         frappe.throw(
             _("POS Profile {0} has no TSE Client set.").format(pos_profile.name)
@@ -125,7 +125,7 @@ def create_tse_transaction_for_pos_invoice(doc, method: str | None = None):
 
     tse_client = frappe.get_doc("TSE Client", pos_profile.tse_client)
 
-    # TSE Security Device aus TSE Client
+    # 5. TSE Security Device aus TSE Client
     if not getattr(tse_client, "tse_security_device", None):
         frappe.throw(
             _("TSE Client {0} is missing a linked TSE Security Device.").format(
@@ -135,7 +135,7 @@ def create_tse_transaction_for_pos_invoice(doc, method: str | None = None):
 
     tse_device = frappe.get_doc("TSE Security Device", tse_client.tse_security_device)
 
-    # Setzen der benötigten IDS in welcher TSS und mit welchem CLient die SPeicherung erfolgt
+    # 6. Setzen der benötigten IDS in welcher TSS und mit welchem CLient die SPeicherung erfolgt
     tss_id = tse_device.tss_id 
     client_id = tse_client.client_id
 
@@ -152,30 +152,30 @@ def create_tse_transaction_for_pos_invoice(doc, method: str | None = None):
             )
         )
 
-    # 1) Transaction-Typ bestimmen SALE / REFUND aus dem POS Invoice DocType
+    # 7. Transaction-Typ bestimmen SALE / REFUND aus dem POS Invoice DocType
     tx_type = "SALE"
     if getattr(doc, "is_return", 0):
         tx_type = "REFUND"
 
-    # 2) Provider holen
+    # 8. Provider holen
     settings = frappe.get_single("TSE Settings")
     provider = get_tse_provider(settings)
 
-    # 3) Schema aus der POS Invoice bauen
+    # 9. Schema aus der POS Invoice bauen
     schema = _build_receipt_schema_from_pos_invoice(doc)
 
-    # 4) Revision wird auf eins gesetzt ist somit die erste 
+    # 10. Revision wird auf eins gesetzt ist somit die erste 
     #    Beim Anlegen Fachlich gesehen immer die erste
     tx_revision = 1
 
-    # 5) Transaktion starten (start_transaction) und Transaction Details zwischen Speichern
+    # 11. Transaktion starten (start_transaction) und Transaction Details zwischen Speichern
     response = provider.start_transaction(
         tss_id=tss_id,
         client_id=client_id,
         tx_revision=1,
     )
 
-    # Anlegen des Docs mit Zwischenstand
+    # 12. Anlegen des Docs mit Zwischenstand
     tse_tx = frappe.get_doc({
         "doctype": "TSE Transaction",
         "tse_security_device": tse_device.name,
@@ -189,18 +189,21 @@ def create_tse_transaction_for_pos_invoice(doc, method: str | None = None):
         "start_time": datetime.fromtimestamp(response.get("time_start")),
     })
 
-    # Zwischenstand speicehrn falls etwas schief läuft
+    # 13. Zwischenstand speichern falls etwas schief läuft
 
     tse_tx.flags.ignore_permissions = True
     tse_tx.insert()
     tse_tx.flags.ignore_permissions = True
     tse_tx.save()
 
-    # 6) Transaktion update (update_transaction)
+    # 14. TSE Transaktion wird in der POS Invoice verlinkt
+    doc.db_set("tse_transaction", tse_tx.name)
+
+    # 15. Transaktion update (update_transaction)
     #    Transaktion kann beednet werden im Restaurant Umfeld müsste noch die Update Funktion kommen
     #TODO
     
-    # 7) Transaktion finish (finish_transaction)
+    # 16. Transaktion finish (finish_transaction)
     response = provider.finish_transaction(
         tss_id=tss_id,
         client_id=client_id,
@@ -209,10 +212,10 @@ def create_tse_transaction_for_pos_invoice(doc, method: str | None = None):
         schema=schema,
     )
 
-    # vorhandene TSE Transaction wieder laden
+    # 17. Vorhandene TSE Transaction wieder laden
     tse_tx = frappe.get_doc("TSE Transaction", tse_tx.name)
 
-    # 7) TSE Transactions Daten in Doc nachtragen und speichern
+    # 18. TSE Transactions Daten in Doc nachtragen und speichern
     tse_tx.status = response.get("state")
     tse_tx.end_time = datetime.fromtimestamp(response.get("time_end"))
     tse_tx.qr_code_data = response.get("qr_code_data")
@@ -226,7 +229,7 @@ def create_tse_transaction_for_pos_invoice(doc, method: str | None = None):
         }, indent=2)
     tse_tx.full_schema_res = frappe.as_json(response, indent=2)
 
-    # 8) VAT-Childs aus Schema
+    # 19. VAT-Childs aus Schema
     receipt = schema.get("standard_v1", {}).get("receipt", {})
 
     for vat_row in receipt.get("amounts_per_vat_rate", []):
@@ -251,7 +254,7 @@ def create_tse_transaction_for_pos_invoice(doc, method: str | None = None):
             "amount": amount,
         })
 
-    # 9) Payment-Childs aus Schema
+    # 20. Payment-Childs aus Schema
     for pay_row in receipt.get("amounts_per_payment_type", []):
         pay_code = pay_row.get("payment_type")
         amount = pay_row.get("amount")
@@ -274,12 +277,8 @@ def create_tse_transaction_for_pos_invoice(doc, method: str | None = None):
             "amount": amount,
         })
 
-    # 10) TSE Transaction Updaten mit Daten und dann Submit
+    # 21. TSE Transaction Updaten mit Daten und dann Submit
     tse_tx.flags.ignore_permissions = True
     tse_tx.save()
     tse_tx.flags.ignore_permissions = True
     tse_tx.submit()
-
-    # 11) Optional: Link auf der POS Invoice speichern (falls Feld vorhanden)
-    if "tse_transaction" in [f.fieldname for f in doc.meta.get("fields")]:
-        doc.db_set("tse_transaction", tse_tx.name)

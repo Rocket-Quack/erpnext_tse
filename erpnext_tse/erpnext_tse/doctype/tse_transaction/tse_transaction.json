@@ -61,7 +61,6 @@
   {
    "fieldname": "company",
    "fieldtype": "Link",
-   "in_list_view": 1,
    "label": "Company",
    "options": "Company",
    "reqd": 1
@@ -88,7 +87,6 @@
   {
    "fieldname": "transaction_type",
    "fieldtype": "Data",
-   "in_list_view": 1,
    "label": "Transaction Type",
    "reqd": 1
   },
@@ -109,6 +107,7 @@
   {
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Status",
    "options": "ACTIVE\nCANCELLED\nFINISHED"
   },
@@ -212,7 +211,7 @@
  "grid_page_length": 50,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-12-08 20:28:14.868919",
+ "modified": "2025-12-09 14:18:23.351807",
  "modified_by": "Administrator",
  "module": "ERPNext TSE",
  "name": "TSE Transaction",

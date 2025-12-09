@@ -67,6 +67,16 @@ def create_custom_fields_for_erpnext():
                 reqd=1,
             ),
         ],
+        "POS Invoice": [
+            dict(
+                fieldname="tse_transaction",
+                label="TSE Transaction",
+                fieldtype="Link",
+                options="TSE Transaction",
+                insert_after="pos_profile",
+                reqd=0,
+            ),
+        ],
     }
 
     # create_custom_fields um nichts doppelt anzulegen
