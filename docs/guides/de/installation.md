@@ -5,7 +5,7 @@
     <h1>TSE ERPNext Installation</h1>
 </div>
 
-Diese Anleitung beschreibt die Installation der TSE-App für ERPNext auf einer bestehenden Bench-Umgebung.  
+Diese Anleitung beschreibt die Installation der TSE-App für ERPNext auf einer bestehenden Bench-Umgebung.
 
 ## Voraussetzungen
 
@@ -56,3 +56,8 @@ bench --site site1.local migrate
 
 #TODO
 
+## 3. Erfolgreiche Installation
+
+Nach der erfolgreichen Installation kann die TSE App über die Oberfläche aufgerufen und Konfiguriert werden
+
+![TSE Übersichtsseite in ERPNext](/docs/assets/TSE-Settings/OVERVIEW.png)
