@@ -4,7 +4,7 @@
  "description": "Ein TSE Client steht normalerweise f\u00fcr eine Kasse und wird einem TSE Security Device zugeordnet.  \nMehrere Clients k\u00f6nnen einem Security Device zugeordnet werden.",
  "docstatus": 0,
  "doctype": "Onboarding Step",
- "idx": 0,
+ "idx": 1,
  "is_complete": 0,
  "is_single": 0,
  "is_skipped": 0,
