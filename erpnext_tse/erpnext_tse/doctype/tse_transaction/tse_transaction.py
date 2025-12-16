@@ -60,28 +60,13 @@ class TSETransaction(Document):
 def _build_receipt_schema_from_pos_invoice(pos_inv) -> dict[str, Any]:
     """
     Schema-Body aus einer POS Invoice erzeugen
-
-    WICHTIG: Das ist nur ein Gerüst 
-    #TODO MApping für korrekten Aufbau
+    Hierbei werden die VAT Rates sowie Payment Type über Hilfsfunktionen ermittelt
     """
-
-    # Placeholder: alles als NORMAL / NON_CASH
-    total = float(pos_inv.grand_total or 0)
 
     receipt = {
         "receipt_type": "RECEIPT",
-        "amounts_per_vat_rate": [
-            {
-                "vat_rate": "NORMAL",
-                "amount": f"{total:.2f}",
-            }
-        ],
-        "amounts_per_payment_type": [
-            {
-                "payment_type": "NON_CASH",
-                "amount": f"{total:.2f}",
-            }
-        ],
+        "amounts_per_vat_rate": _build_amounts_per_vat_rate(pos_inv),
+        "amounts_per_payment_type": _build_amounts_per_payment_type(pos_inv),
     }
 
     return {
@@ -89,6 +74,58 @@ def _build_receipt_schema_from_pos_invoice(pos_inv) -> dict[str, Any]:
             "receipt": receipt,
         }
     }
+
+def _build_amounts_per_payment_type(pos_inv) -> list[dict[str, str]]:
+    """
+    Es erfolgt das Mapping der Payment Types hierbei gibt es Cash und Non_Cash
+    Diese werden aus einer POS Invoice extrahiert und je nach Klasse welche über die DocTypes angelegt wurden Zusammen addiert
+    """
+    payments_rows = pos_inv.get("payments") or []
+    if not payments_rows:
+        frappe.throw(_("POS Invoice has no payments rows. Cannot build receipt schema for TSE Transaction"))
+
+    sums: dict[str, float] = {}
+
+    for row in payments_rows:
+        modeOfPayment = getattr(row, "mode_of_payment", None) or (row.get("mode_of_payment") if isinstance(row, dict) else None)
+        amount = getattr(row, "amount", None) if not isinstance(row, dict) else row.get("amount")
+
+        if not modeOfPayment:
+            frappe.throw(_("POS Invoice payment row is missing 'mode_of_payment'."))
+
+        try:
+            amount_f = float(amount or 0)
+        except Exception:
+            frappe.throw(_("Invalid payment amount for Mode of Payment {0}: {1}").format(modeOfPayment, amount))
+
+        if amount_f == 0:
+            continue
+
+        payment_code = frappe.db.get_value(
+            "TSE Payment Type",
+            {"mode_of_payment": modeOfPayment},
+            "payment_code",
+        )
+        if not payment_code:
+            frappe.throw(_("No TSE Payment Type mapping found for Mode of Payment '{0}'").format(modeOfPayment))
+
+        sums[payment_code] = sums.get(payment_code, 0.0) + amount_f
+
+    if not sums:
+        frappe.throw(_("POS Invoice has no non-zero payments. Cannot build receipt schema"))
+
+    return [{"payment_type": k, "amount": f"{v:.2f}"} for k, v in sums.items()]
+
+def _build_amounts_per_vat_rate(pos_inv) -> list[dict[str, str]]:
+    """
+    Es werden die Summen für die Steuersätze zusammen gerechnet
+    Hierbei erfolt auch ein Mapping über den DocType von TSE_VAT_RATE
+    """
+
+    taxes = pos_inv.get("taxes") or []
+    if not taxes:
+        frappe.throw(_("POS Invoice has no taxes rows. Cannot build VAT schema."))
+
 
 
 # ---------------------------------------------------------------------------
