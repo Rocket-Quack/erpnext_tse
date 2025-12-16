@@ -120,12 +120,114 @@ def _build_amounts_per_vat_rate(pos_inv) -> list[dict[str, str]]:
     """
     Es werden die Summen für die Steuersätze zusammen gerechnet
     Hierbei erfolt auch ein Mapping über den DocType von TSE_VAT_RATE
+
+    Vorgehen:
+    1) Aus der POS Invoice werden die Items gelesen (net amounts pro Item).
+    2) Aus der POS Invoice werden die Steuerzeilen (taxes) gelesen.
+    3) Pro Steuerzeile wird der Steuer-Account (account_head) über den DocType "TSE VAT Rate"
+       auf einen fiskaly VAT Code gemappt (z. B. NORMAL / REDUCED_1).
+    4) Über item_wise_tax_detail wird pro Item der Steuerbetrag und der Steuersatz ermittelt.
+       Für diesen Schritt berücksichtigen wir aktuell nur 19% und 7%.
+    5) Für jedes Item wird der Bruttobetrag berechnet: net_amount + tax_amount
+       und danach je VAT Code aufsummiert.
+
+    Hinweis:
+    - 0% wird hier bewusst noch nicht behandelt. #TODO
+    - Falls ein Mapping fehlt, wird "fail-fast" abgebrochen, damit keine falsche Signatur entsteht.
     """
+
+    invoice_items = pos_inv.get("items") or []
+    if not invoice_items:
+        frappe.throw(_("POS Invoice has no items."))
 
     taxes = pos_inv.get("taxes") or []
     if not taxes:
-        frappe.throw(_("POS Invoice has no taxes rows. Cannot build VAT schema."))
+        frappe.throw(_("POS Invoice has no taxes rows."))
 
+    # item_code -> net amount (base bevorzugt, fallback net_amount)
+    net_amount_by_item_code: dict[str, float] = {}
+    for item_row in invoice_items:
+        item_code = getattr(item_row, "item_code", None) or (item_row.get("item_code") if isinstance(item_row, dict) else None)
+        if not item_code:
+            continue
+
+        base_net_amount = getattr(item_row, "base_net_amount", None) if not isinstance(item_row, dict) else item_row.get("base_net_amount")
+        if base_net_amount is None:
+            base_net_amount = getattr(item_row, "net_amount", None) if not isinstance(item_row, dict) else item_row.get("net_amount")
+
+        net_amount_by_item_code[item_code] = float(base_net_amount or 0)
+
+    if not net_amount_by_item_code:
+        frappe.throw(_("POS Invoice items are missing item_code values. Cannot build VAT breakdown."))
+
+    # vat_code -> gross amount sum
+    gross_amount_by_vat_code: dict[str, float] = {}
+
+    # Cache: Tax Account -> VAT Code (spart DB Calls)
+    vat_code_by_tax_account: dict[str, str] = {}
+
+    def parse_item_wise_detail(detail_value) -> tuple[float, float]:
+        """
+        item_wise_tax_detail ist [rate, tax_amount]
+        Ergebnis: (rate_percent, tax_amount)
+        """
+        if isinstance(detail_value, (list, tuple)) and len(detail_value) >= 2:
+            return float(detail_value[0] or 0), float(detail_value[1] or 0)
+
+        if isinstance(detail_value, dict):
+            rate_percent = float(detail_value.get("tax_rate") or detail_value.get("rate") or 0)
+            tax_amount = float(detail_value.get("tax_amount") or detail_value.get("amount") or 0)
+            return rate_percent, tax_amount
+
+        return 0.0, 0.0
+
+    for tax_row in taxes:
+        tax_account = getattr(tax_row, "account_head", None) or (tax_row.get("account_head") if isinstance(tax_row, dict) else None)
+        item_wise_tax_detail_json = getattr(tax_row, "item_wise_tax_detail", None) if not isinstance(tax_row, dict) else tax_row.get("item_wise_tax_detail")
+
+        # Steuerzeilen ohne Account oder ohne Details können nicht verwendet werden (z. B. leere/sonstige Charges)
+        if not tax_account or not item_wise_tax_detail_json:
+            continue
+
+        # Tax Account -> VAT Code (über Mapping DocType), mit Cache
+        vat_code = vat_code_by_tax_account.get(tax_account)
+        if not vat_code:
+            vat_code = frappe.db.get_value("TSE VAT Rate", {"account": tax_account}, "vat_rate_code")
+            if not vat_code:
+                frappe.throw(_("No TSE VAT Rate mapping found for Tax Account '{0}'.").format(tax_account))
+            vat_code_by_tax_account[tax_account] = vat_code
+
+        # JSON aus item_wise_tax_detail parsen
+        item_wise_details = frappe.parse_json(item_wise_tax_detail_json)
+        if not isinstance(item_wise_details, dict):
+            continue
+
+        # Pro Item auswerten
+        for item_code, detail_value in item_wise_details.items():
+            # Wenn Keys nicht matchen (z. B. Item Name statt Item Code), wird dieses Item übersprungen
+            if item_code not in net_amount_by_item_code:
+                continue
+
+            rate_percent, tax_amount = parse_item_wise_detail(detail_value)
+
+            # Aktuell nur 19% / 7%
+            if rate_percent not in (19.0, 7.0):
+                continue
+
+            # Bruttoanteil je Item: net + tax
+            item_net_amount = net_amount_by_item_code[item_code]
+            item_gross_amount = item_net_amount + float(tax_amount or 0)
+
+            gross_amount_by_vat_code[vat_code] = gross_amount_by_vat_code.get(vat_code, 0.0) + item_gross_amount
+
+    if not gross_amount_by_vat_code:
+        frappe.throw(_("Could not derive VAT amounts (no 19%/7% data found in item_wise_tax_detail)."))
+
+    return [
+        {"vat_rate": vat_code, "amount": f"{gross_amount:.2f}"}
+        for vat_code, gross_amount in gross_amount_by_vat_code.items()
+        if gross_amount
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -278,13 +380,9 @@ def create_tse_transaction_for_pos_invoice(doc, method: str | None = None):
             {"vat_rate_code": vat_code},
             "name",
         )
+
         if not vat_rate_name:
-            vat_rate_doc = frappe.get_doc({
-                "doctype": "TSE VAT Rate",
-                "vat_rate_code": vat_code,
-                "description": vat_code,
-            }).insert(ignore_permissions=True)
-            vat_rate_name = vat_rate_doc.name
+            frappe.throw(_("Missing TSE VAT Rate configuration for vat_rate_code '{0}'.").format(vat_code))
 
         tse_tx.append("vat_rate", {
             "vat_rate": vat_rate_name,
@@ -301,13 +399,9 @@ def create_tse_transaction_for_pos_invoice(doc, method: str | None = None):
             {"payment_code": pay_code},
             "name",
         )
+
         if not payment_type_name:
-            payment_type_doc = frappe.get_doc({
-                "doctype": "TSE Payment Type",
-                "payment_code": pay_code,
-                "description": pay_code,
-            }).insert(ignore_permissions=True)
-            payment_type_name = payment_type_doc.name
+            frappe.throw(_("Missing TSE Payment Type configuration for payment_code '{0}'.").format(pay_code))
 
         tse_tx.append("payment_types", {
             "payment_type": payment_type_name,

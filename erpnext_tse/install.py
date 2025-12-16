@@ -19,10 +19,10 @@ def after_migrate():
 
 def create_default_vat_rates():
     default_rates = [
-        {"vat_rate_code": "NORMAL", "description": "Regelsteuersatz"},
-        {"vat_rate_code": "REDUCED_1", "description": "Ermäßigter Steuersatz"},
-        {"vat_rate_code": "SPECIAL_RATE_1", "description": "Spezial Steuersatz 1"},
-        {"vat_rate_code": "SPECIAL_RATE_2", "description": "Spezial Steuersatz 2"},
+        {"vat_rate_code": "NORMAL", "description": "19 % / Regelsteuersatz"},
+        {"vat_rate_code": "REDUCED_1", "description": "7% / Ermäßigter Steuersatz"},
+        {"vat_rate_code": "SPECIAL_RATE_1", "description": "NICHT PRODUKTIONSREIF! Spezial Steuersatz 1"},
+        {"vat_rate_code": "SPECIAL_RATE_2", "description": "NICHT PRODUKTIONSREIF! Spezial Steuersatz 2"},
         {"vat_rate_code": "NULL", "description": "0 % / steuerfrei"},
     ]
 
