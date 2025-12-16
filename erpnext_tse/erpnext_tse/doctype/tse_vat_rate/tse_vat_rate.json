@@ -6,7 +6,11 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "company",
   "section_break_zjyh",
+  "column_break_uwhb",
+  "account",
+  "column_break_wpyo",
   "vat_rate_code",
   "column_break_njdp",
   "description"
@@ -18,11 +22,11 @@
   },
   {
    "fieldname": "vat_rate_code",
-   "fieldtype": "Data",
+   "fieldtype": "Select",
    "in_list_view": 1,
    "label": "VAT Rate Code",
-   "reqd": 1,
-   "unique": 1
+   "options": "NULL\nSPECIAL_RATE_2\nSPECIAL_RATE_1\nREDUCED_1\nNORMAL",
+   "reqd": 1
   },
   {
    "fieldname": "column_break_njdp",
@@ -33,12 +37,37 @@
    "fieldtype": "Data",
    "label": "Description",
    "reqd": 1
+  },
+  {
+   "fieldname": "column_break_uwhb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_wpyo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "account",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Account",
+   "link_filters": "[[\"Account\",\"account_type\",\"=\",\"Tax\"],[\"Account\",\"disabled\",\"=\",0],[\"Account\",\"is_group\",\"=\",0]]",
+   "options": "Account",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "account.company",
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "options": "Company",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-07 02:24:07.162440",
+ "modified": "2025-12-16 14:46:40.892931",
  "modified_by": "Administrator",
  "module": "ERPNext TSE",
  "name": "TSE VAT Rate",

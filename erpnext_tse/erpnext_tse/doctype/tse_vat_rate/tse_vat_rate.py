@@ -1,9 +1,16 @@
 # Copyright (c) 2025, RocketQuackIT and contributors
 # For license information, please see license.txt
 
-# import frappe
+import frappe
 from frappe.model.document import Document
 
-
 class TSEVATRate(Document):
-	pass
+    def validate(self):
+        if not self.company or not self.account:
+            return
+
+        account_company = frappe.db.get_value("Account", self.account, "company")
+        if account_company and account_company != self.company:
+            frappe.throw(
+                f"This account '{self.account}' belongs to '{account_company}', and not to '{self.company}'."
+            )
