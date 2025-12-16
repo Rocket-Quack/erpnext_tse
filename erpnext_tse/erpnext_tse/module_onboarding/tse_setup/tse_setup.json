@@ -10,7 +10,7 @@
  "documentation_url": "https://github.com/Rocket-Quack/erpnext_tse/blob/version-15/docs/guides/de/configuration.md",
  "idx": 0,
  "is_complete": 0,
- "modified": "2025-12-16 17:09:16.886062",
+ "modified": "2025-12-16 17:33:06.363974",
  "modified_by": "Administrator",
  "module": "ERPNext TSE",
  "name": "TSE Setup",
@@ -23,16 +23,16 @@
    "step": "TSE Security Device anlegen"
   },
   {
-   "step": "TSE VAT Configuration"
+   "step": "TSE Client anlegen"
+  },
+  {
+   "step": "POS Profile zu TSE Client zuweisen"
   },
   {
    "step": "TSE Payment Type Configuration"
   },
   {
-   "step": "TSE Client anlegen"
-  },
-  {
-   "step": "POS Profile zu TSE Client zuweisen"
+   "step": "TSE VAT Configuration"
   }
  ],
  "subtitle": "F\u00fchre diese Schritte aus, um die TSE-Integration zu aktivieren",
