@@ -75,6 +75,7 @@ def _build_receipt_schema_from_pos_invoice(pos_inv) -> dict[str, Any]:
         }
     }
 
+# TODO Payment Amount darf nur aus Sicht der Kasse enthaltene Menge erhalten also Ohne Wechselgeld
 def _build_amounts_per_payment_type(pos_inv) -> list[dict[str, str]]:
     """
     Es erfolgt das Mapping der Payment Types hierbei gibt es Cash und Non_Cash
