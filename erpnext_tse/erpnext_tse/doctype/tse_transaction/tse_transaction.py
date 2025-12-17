@@ -88,27 +88,27 @@ def _build_amounts_per_payment_type(pos_inv) -> list[dict[str, str]]:
     sums: dict[str, float] = {}
 
     for row in payments_rows:
-        modeOfPayment = getattr(row, "mode_of_payment", None) or (row.get("mode_of_payment") if isinstance(row, dict) else None)
+        mode_of_payment = getattr(row, "mode_of_payment", None) or (row.get("mode_of_payment") if isinstance(row, dict) else None)
         amount = getattr(row, "amount", None) if not isinstance(row, dict) else row.get("amount")
 
-        if not modeOfPayment:
+        if not mode_of_payment:
             frappe.throw(_("POS Invoice payment row is missing 'mode_of_payment'."))
 
         try:
             amount_f = float(amount or 0)
         except Exception:
-            frappe.throw(_("Invalid payment amount for Mode of Payment {0}: {1}").format(modeOfPayment, amount))
+            frappe.throw(_("Invalid payment amount for Mode of Payment {0}: {1}").format(mode_of_payment, amount))
 
         if amount_f == 0:
             continue
 
         payment_code = frappe.db.get_value(
             "TSE Payment Type",
-            {"mode_of_payment": modeOfPayment},
+            {"mode_of_payment": mode_of_payment},
             "payment_code",
         )
         if not payment_code:
-            frappe.throw(_("No TSE Payment Type mapping found for Mode of Payment '{0}'").format(modeOfPayment))
+            frappe.throw(_("No TSE Payment Type mapping found for Mode of Payment '{0}'").format(mode_of_payment))
 
         sums[payment_code] = sums.get(payment_code, 0.0) + amount_f
 
