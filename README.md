@@ -73,8 +73,52 @@ Zusätzlich werden alle Status-Änderungen zur Einsicht des Nutzers Dokumentiert
 ### Signierte POS-Belege
 #TODO
 
-## License
-GNU GPL V3. See the `LICENSE` file for more information.
+## Support & Inbetriebnahme
 
-## Sponsors
-#TODO
+### Community-Support (kostenlos)
+- **Bug Reports & Feature Requests:** 
+- **Fragen zur Allgemeinen Nutzung:**
+
+Bitte über die [Issues](https://github.com/Rocket-Quack/erpnext_tse/issues) ein Ticket erstellen
+
+### Erweiterte Unterstützung (optional / kommerziell)
+Kommerzielle Unterstützung ist optional und richtet sich an besondere
+Anforderungen oder komplexere Setups.  
+
+In den meisten Fällen ist keine kommerzielle Unterstützung erforderlich.
+Die App ist so konzipiert, dass Installation, Konfiguration und Betrieb
+mit der bereitgestellten Dokumentation selbstständig leicht möglich sein sollte.
+
+Für Unterstützung die dennoch gewünscht ist, z. B. bei:
+- Installation, Inbetriebnahme und Konfiguration
+- Troubleshooting in produktionsnahen Setups
+- Anpassungen / Integrationen
+
+können Anfragen über das Kontaktformular gestellt werden:  
+🦆 [Quack Senden](https://rocket-quack.github.io/website/contact-erpnext-tse) 🦆
+
+## Sponsoren ❤️
+
+Die Entwicklung und Wartung wird durch Sponsoren und freiwillige Unterstützung ermöglicht. 
+
+Ein besonderer Dank geht hierbei an die folgenden Unterstützer:
+
+<a href="https://puzzles-shisha.de/" target=_blank><img
+  src="https://puzzles-shisha.de/cdn/shop/files/Logo_Puzzles_2.png?v=1717513250&width=90" height="50"
+/></a>
+
+Wer das Projekt unterstützen möchte, kann dies gerne über
+[Ko-fi](https://ko-fi.com/rocketquack) tun.
+
+
+Hinweis: Sponsoren und Unterstützer haben keinen Einfluss auf Funktionalität, Roadmap oder Quellcode.
+
+## License
+
+Copyright (C) 2025 RocketQuackIT
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+GNU GPL V3. See the `LICENSE` file for more information.
