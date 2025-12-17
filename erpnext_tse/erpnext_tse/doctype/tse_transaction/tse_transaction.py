@@ -75,41 +75,61 @@ def _build_receipt_schema_from_pos_invoice(pos_inv) -> dict[str, Any]:
         }
     }
 
+# TODO Payment Amount darf nur aus Sicht der Kasse enthaltene Menge erhalten also Ohne Wechselgeld
 def _build_amounts_per_payment_type(pos_inv) -> list[dict[str, str]]:
     """
     Es erfolgt das Mapping der Payment Types hierbei gibt es Cash und Non_Cash
     Diese werden aus einer POS Invoice extrahiert und je nach Klasse welche über die DocTypes angelegt wurden Zusammen addiert
+
+    Wechselgeld muss abgezogen werden darf nicht in die Summe der Payment Types einfließen
+
     """
     payments_rows = pos_inv.get("payments") or []
     if not payments_rows:
         frappe.throw(_("POS Invoice has no payments rows. Cannot build receipt schema for TSE Transaction"))
 
+    try:
+        change_remaining = float(getattr(pos_inv, "change_amount", 0) or 0)
+    except Exception:
+        frappe.throw(_("Invalid change_amount on POS Invoice: {0}").format(getattr(pos_inv, "change_amount", None)))
+
     sums: dict[str, float] = {}
 
     for row in payments_rows:
-        modeOfPayment = getattr(row, "mode_of_payment", None) or (row.get("mode_of_payment") if isinstance(row, dict) else None)
+        mode_of_payment = getattr(row, "mode_of_payment", None) or (row.get("mode_of_payment") if isinstance(row, dict) else None)
         amount = getattr(row, "amount", None) if not isinstance(row, dict) else row.get("amount")
 
-        if not modeOfPayment:
+        if not mode_of_payment:
             frappe.throw(_("POS Invoice payment row is missing 'mode_of_payment'."))
 
         try:
             amount_f = float(amount or 0)
         except Exception:
-            frappe.throw(_("Invalid payment amount for Mode of Payment {0}: {1}").format(modeOfPayment, amount))
+            frappe.throw(_("Invalid payment amount for Mode of Payment {0}: {1}").format(mode_of_payment, amount))
 
         if amount_f == 0:
             continue
 
+        final_amount = amount_f
+
         payment_code = frappe.db.get_value(
             "TSE Payment Type",
-            {"mode_of_payment": modeOfPayment},
+            {"mode_of_payment": mode_of_payment},
             "payment_code",
         )
         if not payment_code:
-            frappe.throw(_("No TSE Payment Type mapping found for Mode of Payment '{0}'").format(modeOfPayment))
+            frappe.throw(_("No TSE Payment Type mapping found for Mode of Payment '{0}'").format(mode_of_payment))
 
-        sums[payment_code] = sums.get(payment_code, 0.0) + amount_f
+        # Wechselgeld abziehen
+        if change_remaining > 0:
+            if final_amount >= change_remaining:
+                final_amount -= change_remaining
+                change_remaining = 0.0
+            else:
+                change_remaining -= final_amount
+                final_amount = 0.0
+
+        sums[payment_code] = sums.get(payment_code, 0.0) + final_amount
 
     if not sums:
         frappe.throw(_("POS Invoice has no non-zero payments. Cannot build receipt schema"))
