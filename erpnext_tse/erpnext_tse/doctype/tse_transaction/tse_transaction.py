@@ -80,10 +80,18 @@ def _build_amounts_per_payment_type(pos_inv) -> list[dict[str, str]]:
     """
     Es erfolgt das Mapping der Payment Types hierbei gibt es Cash und Non_Cash
     Diese werden aus einer POS Invoice extrahiert und je nach Klasse welche über die DocTypes angelegt wurden Zusammen addiert
+
+    Wechselgeld muss abgezogen werden darf nicht in die Summe der Payment Types einfließen
+
     """
     payments_rows = pos_inv.get("payments") or []
     if not payments_rows:
         frappe.throw(_("POS Invoice has no payments rows. Cannot build receipt schema for TSE Transaction"))
+
+    try:
+        change_remaining = float(getattr(pos_inv, "change_amount", 0) or 0)
+    except Exception:
+        frappe.throw(_("Invalid change_amount on POS Invoice: {0}").format(getattr(pos_inv, "change_amount", None)))
 
     sums: dict[str, float] = {}
 
@@ -102,6 +110,8 @@ def _build_amounts_per_payment_type(pos_inv) -> list[dict[str, str]]:
         if amount_f == 0:
             continue
 
+        final_amount = amount_f
+
         payment_code = frappe.db.get_value(
             "TSE Payment Type",
             {"mode_of_payment": mode_of_payment},
@@ -110,7 +120,16 @@ def _build_amounts_per_payment_type(pos_inv) -> list[dict[str, str]]:
         if not payment_code:
             frappe.throw(_("No TSE Payment Type mapping found for Mode of Payment '{0}'").format(mode_of_payment))
 
-        sums[payment_code] = sums.get(payment_code, 0.0) + amount_f
+        # Wechselgeld abziehen
+        if change_remaining > 0:
+            if final_amount >= change_remaining:
+                final_amount -= change_remaining
+                change_remaining = 0.0
+            else:
+                change_remaining -= final_amount
+                final_amount = 0.0
+
+        sums[payment_code] = sums.get(payment_code, 0.0) + final_amount
 
     if not sums:
         frappe.throw(_("POS Invoice has no non-zero payments. Cannot build receipt schema"))
