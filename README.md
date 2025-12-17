@@ -12,6 +12,13 @@ Für die technische Umsetzung der TSE-Anbindung wird der Cloud-TSE-Anbieter [Fis
 
 Somit ist es möglich Gesetzeskonform die POS-Oberfläche von ERPNext zu nutzen und hierbei die KassenSichV zu erfüllen.
 
+## Supported Versions
+
+| ERPNext | Frappe | Support-Status |
+|---------|--------|----------------|
+| v16 Beta    | v16 Beta   | ⚙️ Bald Verfügbar     |
+| v15     | v15    | ✅ Unterstützt     |
+
 ## Installation (Frappe Cloud)
 
 Die App kann direkt über die Frappe Cloud installiert werden:
