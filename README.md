@@ -28,7 +28,7 @@ Die App kann direkt über die Frappe Cloud installiert werden:
 3. Im Schritt **„Select apps to install“**:
    - Wähle die gewünschte Frappe-/ERPNext-Version aus  
    - Aktiviere zusätzlich die App **`ERPNEXT TSE`**
-4. Schließe den Assistenten ab bis die Seite erstellt wurde
+4. Schließlich den Assistenten abschließen bis die Seite erstellt wurde
 
 ## Installation (Self-Hosted)
 
