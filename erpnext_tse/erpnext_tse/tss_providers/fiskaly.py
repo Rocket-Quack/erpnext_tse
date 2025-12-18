@@ -43,7 +43,9 @@ class FiskalyProvider(BaseTSEProvider):
     # --- configuration from settings ------------------------------------
 
     def get_base_url(self) -> str:
-        base_url = self.doc.base_url or "https://kassensichv-middleware.fiskaly.com/api/v2"
+        base_url = (
+            self.doc.base_url or "https://kassensichv-middleware.fiskaly.com/api/v2"
+        )
         return base_url.rstrip("/")
 
     def get_api_credentials(self) -> tuple[str, str]:
@@ -264,7 +266,11 @@ class FiskalyProvider(BaseTSEProvider):
 
         if not data.get("access_token"):
             err_code = data.get("code")
-            msg = data.get("message") or data.get("error") or "Auth response did not contain an access_token."
+            msg = (
+                data.get("message")
+                or data.get("error")
+                or "Auth response did not contain an access_token."
+            )
 
             self._log(
                 logging.WARNING,
@@ -317,7 +323,7 @@ class FiskalyProvider(BaseTSEProvider):
             "organization_id": claims.get("organization_id"),
             "access_token_expires_at": access_exp,
         }
-    
+
     def authenticate_admin(self, tss_id: str, admin_pin: str) -> dict[str, Any]:
         """Admin-Authentifizierung für eine TSS (authenticateAdmin)."""
         payload = {
@@ -329,8 +335,10 @@ class FiskalyProvider(BaseTSEProvider):
             path=f"/tss/{tss_id}/admin/auth",
             json=payload,
         )
-    
-    def change_admin_pin(self, tss_id: str, admin_puk: str, new_admin_pin: str) -> dict[str, Any]:
+
+    def change_admin_pin(
+        self, tss_id: str, admin_puk: str, new_admin_pin: str
+    ) -> dict[str, Any]:
         """Admin-PIN mit Admin-PUK setzen oder zurücksetzen (changeAdminPin). Auch für die Initialisierung einer erstellten TSS"""
         payload = {
             "admin_puk": admin_puk,
@@ -342,7 +350,7 @@ class FiskalyProvider(BaseTSEProvider):
             path=f"/tss/{tss_id}/admin",
             json=payload,
         )
-    
+
     def logout_admin(self, tss_id: str) -> dict[str, Any]:
         """Admin-Session explizit beenden (logoutAdmin)."""
         return self._request_json(
@@ -404,7 +412,7 @@ class FiskalyProvider(BaseTSEProvider):
 
         headers["Authorization"] = f"Bearer {token}"
         return requests.request(method, url, headers=headers, timeout=15, **kwargs)
-    
+
     def _request_json(self, method: str, path: str, **kwargs) -> dict[str, Any]:
         """Wrapper um request(), der immer ein Dict zurückgibt und Fehler schön aufbereitet."""
         resp = self.request(method, path, **kwargs)
@@ -440,9 +448,11 @@ class FiskalyProvider(BaseTSEProvider):
     # High-Level: TSS-Operationen für TSESecurityDevice
     # ---------------------------------------------------------------------
 
-    def create_tss(self, company: str, description: str | None = None) -> dict[str, Any]:
+    def create_tss(
+        self, company: str, description: str | None = None
+    ) -> dict[str, Any]:
         """TSS bei Fiskaly anlegen."""
-        
+
         # UUID für das anlegen der TSS generieren
         tss_id = str(uuid.uuid4())
 
@@ -458,7 +468,7 @@ class FiskalyProvider(BaseTSEProvider):
 
         data.setdefault("id", tss_id)
         return data
-    
+
     def deploy_tss(self, tss_id: str) -> dict[str, Any]:
         """TSS deployen: (State → UNINITIALIZED)."""
         payload = {
@@ -511,7 +521,7 @@ class FiskalyProvider(BaseTSEProvider):
             json=payload,
         )
         return data
-    
+
     # ---------------------------------------------------------------------
     # High-Level: Client-Operationen für TSE Client
     # ---------------------------------------------------------------------
@@ -554,7 +564,7 @@ class FiskalyProvider(BaseTSEProvider):
             json=payload,
         )
         return data
-        
+
     def register_client(self, tss_id: str, client_id: str) -> dict[str, Any]:
         """
         Client wird auf den Status "REGISTERED" gesetzt und kann somit eine TSS wieder verwenden
@@ -584,31 +594,30 @@ class FiskalyProvider(BaseTSEProvider):
             method="GET",
             path=f"/tss/{tss_id}/client/{client_id}",
         )
-    
 
-	# ---------------------------------------------------------------------
-	# High-Level: Transaction operations (SIGN DE upsertTransaction)
-	# ---------------------------------------------------------------------
+    # ---------------------------------------------------------------------
+    # High-Level: Transaction operations (SIGN DE upsertTransaction)
+    # ---------------------------------------------------------------------
 
     def list_transactions(self, tss_id: str) -> dict[str, Any]:
         """Alle Transaktionen einer TSS abrufen (fuer spaetere Synchronisation)."""
         return self._request_json(
-			method="GET",
-			path=f"/tss/{tss_id}/tx",
-		)
+            method="GET",
+            path=f"/tss/{tss_id}/tx",
+        )
 
     def get_transaction(self, tss_id: str, tx_id: str) -> dict[str, Any]:
         """Einzelne Transaktion einer TSS abrufen."""
         return self._request_json(
-			method="GET",
-			path=f"/tss/{tss_id}/tx/{tx_id}",
-		)
-	
+            method="GET",
+            path=f"/tss/{tss_id}/tx/{tx_id}",
+        )
+
     def upsert_transaction(
-		self,
-		tss_id: str,
-		tx_id: str,
-		tx_revision: int,
+        self,
+        tss_id: str,
+        tx_id: str,
+        tx_revision: int,
         body: dict[str, Any],
     ) -> dict[str, Any]:
         """
@@ -621,7 +630,7 @@ class FiskalyProvider(BaseTSEProvider):
             path=f"/tss/{tss_id}/tx/{tx_id}?tx_revision={tx_revision}",
             json=body,
         )
-    
+
     def start_transaction(
         self,
         tss_id: str,
@@ -648,7 +657,7 @@ class FiskalyProvider(BaseTSEProvider):
             tx_revision=tx_revision,
             body=body,
         )
-    
+
     def finish_transaction(
         self,
         tss_id: str,
@@ -675,8 +684,8 @@ class FiskalyProvider(BaseTSEProvider):
             tx_id=tx_id,
             body=body,
         )
-    
-    #TODO
+
+    # TODO
     def cancel_transaction(
         self,
         tss_id: str,

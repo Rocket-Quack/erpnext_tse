@@ -51,9 +51,7 @@ app_license = "gpl-3.0"
 # Svg Icons
 # ------------------
 # include app icons in desk
-app_include_icons = [
-    "erpnext_tse/icons/icon_tse_app.svg"
-]
+app_include_icons = ["erpnext_tse/icons/icon_tse_app.svg"]
 
 # Home Pages
 # ----------
@@ -145,7 +143,7 @@ after_migrate = "erpnext_tse.install.after_migrate"
 
 doc_events = {
     "POS Invoice": {
-        "before_submit": [ 
+        "before_submit": [
             "erpnext_tse.erpnext_tse.doctype.tse_transaction.tse_transaction.create_tse_transaction_for_pos_invoice",
             "erpnext_tse.erpnext_tse.pos.pos_invoice.pos_invoice_hooks.ensure_tse_transaction_present_and_finished",
         ],
@@ -256,4 +254,3 @@ doc_events = {
 # ------------
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
-

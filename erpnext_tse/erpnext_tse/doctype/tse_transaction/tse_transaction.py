@@ -9,6 +9,7 @@ from typing import Any
 
 from erpnext_tse.erpnext_tse.tss_providers import get_tse_provider
 
+
 class TSETransaction(Document):
     def before_cancel(self):
         frappe.throw(_("TSE Transactions cannot be cancelled."))
@@ -23,15 +24,16 @@ class TSETransaction(Document):
         Nur erlauben, wenn TSE-Funktionalität aktiviert ist
         """
         self.ensure_tse_enabled()
-            
-		# Sicherstellen, dass nur INITIALIZED-TSE verknüpft werden
+
+        # Sicherstellen, dass nur INITIALIZED-TSE verknüpft werden
         if self.tse_security_device:
             tss = frappe.get_doc("TSE Security Device", self.tse_security_device)
             if tss.tss_status != "INITIALIZED":
                 frappe.throw(
-                    _("Only TSE Security Devices with status 'INITIALIZED' "
-                      "can be used for Transaction. Current status: {0}")
-                    .format(tss.tss_status)
+                    _(
+                        "Only TSE Security Devices with status 'INITIALIZED' "
+                        "can be used for Transaction. Current status: {0}"
+                    ).format(tss.tss_status)
                 )
 
         # Sicherstellen, dass verknüpfter Client auf REGISTERED steht
@@ -39,23 +41,27 @@ class TSETransaction(Document):
             client = frappe.get_doc("TSE Client", self.tse_client)
             if client.client_status != "REGISTERED":
                 frappe.throw(
-                    _("Only Client with status 'REGISTERED' "
-                      "can be used for Transaction. Current status: {0}")
-                    .format(client.client_status)
+                    _(
+                        "Only Client with status 'REGISTERED' "
+                        "can be used for Transaction. Current status: {0}"
+                    ).format(client.client_status)
                 )
-            
 
     def ensure_tse_enabled(self):
         settings = frappe.get_single("TSE Settings")
         if not getattr(settings, "enabled", None):
             frappe.throw(
-                _("TSE functionality is not enabled in TSE Settings. "
-                  "Please enable it before creating a TSE Security Device.")
+                _(
+                    "TSE functionality is not enabled in TSE Settings. "
+                    "Please enable it before creating a TSE Security Device."
+                )
             )
+
 
 # ---------------------------------------------------------------------------
 # Hilfsfunktionen zur Schema Erstellung
 # ---------------------------------------------------------------------------
+
 
 def _build_receipt_schema_from_pos_invoice(pos_inv) -> dict[str, Any]:
     """
@@ -75,6 +81,7 @@ def _build_receipt_schema_from_pos_invoice(pos_inv) -> dict[str, Any]:
         }
     }
 
+
 # TODO Payment Amount darf nur aus Sicht der Kasse enthaltene Menge erhalten also Ohne Wechselgeld
 def _build_amounts_per_payment_type(pos_inv) -> list[dict[str, str]]:
     """
@@ -86,18 +93,32 @@ def _build_amounts_per_payment_type(pos_inv) -> list[dict[str, str]]:
     """
     payments_rows = pos_inv.get("payments") or []
     if not payments_rows:
-        frappe.throw(_("POS Invoice has no payments rows. Cannot build receipt schema for TSE Transaction"))
+        frappe.throw(
+            _(
+                "POS Invoice has no payments rows. Cannot build receipt schema for TSE Transaction"
+            )
+        )
 
     try:
         change_remaining = float(getattr(pos_inv, "change_amount", 0) or 0)
     except Exception:
-        frappe.throw(_("Invalid change_amount on POS Invoice: {0}").format(getattr(pos_inv, "change_amount", None)))
+        frappe.throw(
+            _("Invalid change_amount on POS Invoice: {0}").format(
+                getattr(pos_inv, "change_amount", None)
+            )
+        )
 
     sums: dict[str, float] = {}
 
     for row in payments_rows:
-        mode_of_payment = getattr(row, "mode_of_payment", None) or (row.get("mode_of_payment") if isinstance(row, dict) else None)
-        amount = getattr(row, "amount", None) if not isinstance(row, dict) else row.get("amount")
+        mode_of_payment = getattr(row, "mode_of_payment", None) or (
+            row.get("mode_of_payment") if isinstance(row, dict) else None
+        )
+        amount = (
+            getattr(row, "amount", None)
+            if not isinstance(row, dict)
+            else row.get("amount")
+        )
 
         if not mode_of_payment:
             frappe.throw(_("POS Invoice payment row is missing 'mode_of_payment'."))
@@ -105,7 +126,11 @@ def _build_amounts_per_payment_type(pos_inv) -> list[dict[str, str]]:
         try:
             amount_f = float(amount or 0)
         except Exception:
-            frappe.throw(_("Invalid payment amount for Mode of Payment {0}: {1}").format(mode_of_payment, amount))
+            frappe.throw(
+                _("Invalid payment amount for Mode of Payment {0}: {1}").format(
+                    mode_of_payment, amount
+                )
+            )
 
         if amount_f == 0:
             continue
@@ -118,7 +143,11 @@ def _build_amounts_per_payment_type(pos_inv) -> list[dict[str, str]]:
             "payment_code",
         )
         if not payment_code:
-            frappe.throw(_("No TSE Payment Type mapping found for Mode of Payment '{0}'").format(mode_of_payment))
+            frappe.throw(
+                _("No TSE Payment Type mapping found for Mode of Payment '{0}'").format(
+                    mode_of_payment
+                )
+            )
 
         # Wechselgeld abziehen
         if change_remaining > 0:
@@ -132,9 +161,12 @@ def _build_amounts_per_payment_type(pos_inv) -> list[dict[str, str]]:
         sums[payment_code] = sums.get(payment_code, 0.0) + final_amount
 
     if not sums:
-        frappe.throw(_("POS Invoice has no non-zero payments. Cannot build receipt schema"))
+        frappe.throw(
+            _("POS Invoice has no non-zero payments. Cannot build receipt schema")
+        )
 
     return [{"payment_type": k, "amount": f"{v:.2f}"} for k, v in sums.items()]
+
 
 def _build_amounts_per_vat_rate(pos_inv) -> list[dict[str, str]]:
     """
@@ -167,18 +199,32 @@ def _build_amounts_per_vat_rate(pos_inv) -> list[dict[str, str]]:
     # item_code -> net amount (base bevorzugt, fallback net_amount)
     net_amount_by_item_code: dict[str, float] = {}
     for item_row in invoice_items:
-        item_code = getattr(item_row, "item_code", None) or (item_row.get("item_code") if isinstance(item_row, dict) else None)
+        item_code = getattr(item_row, "item_code", None) or (
+            item_row.get("item_code") if isinstance(item_row, dict) else None
+        )
         if not item_code:
             continue
 
-        base_net_amount = getattr(item_row, "base_net_amount", None) if not isinstance(item_row, dict) else item_row.get("base_net_amount")
+        base_net_amount = (
+            getattr(item_row, "base_net_amount", None)
+            if not isinstance(item_row, dict)
+            else item_row.get("base_net_amount")
+        )
         if base_net_amount is None:
-            base_net_amount = getattr(item_row, "net_amount", None) if not isinstance(item_row, dict) else item_row.get("net_amount")
+            base_net_amount = (
+                getattr(item_row, "net_amount", None)
+                if not isinstance(item_row, dict)
+                else item_row.get("net_amount")
+            )
 
         net_amount_by_item_code[item_code] = float(base_net_amount or 0)
 
     if not net_amount_by_item_code:
-        frappe.throw(_("POS Invoice items are missing item_code values. Cannot build VAT breakdown."))
+        frappe.throw(
+            _(
+                "POS Invoice items are missing item_code values. Cannot build VAT breakdown."
+            )
+        )
 
     # vat_code -> gross amount sum
     gross_amount_by_vat_code: dict[str, float] = {}
@@ -195,15 +241,25 @@ def _build_amounts_per_vat_rate(pos_inv) -> list[dict[str, str]]:
             return float(detail_value[0] or 0), float(detail_value[1] or 0)
 
         if isinstance(detail_value, dict):
-            rate_percent = float(detail_value.get("tax_rate") or detail_value.get("rate") or 0)
-            tax_amount = float(detail_value.get("tax_amount") or detail_value.get("amount") or 0)
+            rate_percent = float(
+                detail_value.get("tax_rate") or detail_value.get("rate") or 0
+            )
+            tax_amount = float(
+                detail_value.get("tax_amount") or detail_value.get("amount") or 0
+            )
             return rate_percent, tax_amount
 
         return 0.0, 0.0
 
     for tax_row in taxes:
-        tax_account = getattr(tax_row, "account_head", None) or (tax_row.get("account_head") if isinstance(tax_row, dict) else None)
-        item_wise_tax_detail_json = getattr(tax_row, "item_wise_tax_detail", None) if not isinstance(tax_row, dict) else tax_row.get("item_wise_tax_detail")
+        tax_account = getattr(tax_row, "account_head", None) or (
+            tax_row.get("account_head") if isinstance(tax_row, dict) else None
+        )
+        item_wise_tax_detail_json = (
+            getattr(tax_row, "item_wise_tax_detail", None)
+            if not isinstance(tax_row, dict)
+            else tax_row.get("item_wise_tax_detail")
+        )
 
         # Steuerzeilen ohne Account oder ohne Details können nicht verwendet werden (z. B. leere/sonstige Charges)
         if not tax_account or not item_wise_tax_detail_json:
@@ -212,9 +268,15 @@ def _build_amounts_per_vat_rate(pos_inv) -> list[dict[str, str]]:
         # Tax Account -> VAT Code (über Mapping DocType), mit Cache
         vat_code = vat_code_by_tax_account.get(tax_account)
         if not vat_code:
-            vat_code = frappe.db.get_value("TSE VAT Rate", {"account": tax_account}, "vat_rate_code")
+            vat_code = frappe.db.get_value(
+                "TSE VAT Rate", {"account": tax_account}, "vat_rate_code"
+            )
             if not vat_code:
-                frappe.throw(_("No TSE VAT Rate mapping found for Tax Account '{0}'.").format(tax_account))
+                frappe.throw(
+                    _("No TSE VAT Rate mapping found for Tax Account '{0}'.").format(
+                        tax_account
+                    )
+                )
             vat_code_by_tax_account[tax_account] = vat_code
 
         # JSON aus item_wise_tax_detail parsen
@@ -238,10 +300,16 @@ def _build_amounts_per_vat_rate(pos_inv) -> list[dict[str, str]]:
             item_net_amount = net_amount_by_item_code[item_code]
             item_gross_amount = item_net_amount + float(tax_amount or 0)
 
-            gross_amount_by_vat_code[vat_code] = gross_amount_by_vat_code.get(vat_code, 0.0) + item_gross_amount
+            gross_amount_by_vat_code[vat_code] = (
+                gross_amount_by_vat_code.get(vat_code, 0.0) + item_gross_amount
+            )
 
     if not gross_amount_by_vat_code:
-        frappe.throw(_("Could not derive VAT amounts (no 19%/7% data found in item_wise_tax_detail)."))
+        frappe.throw(
+            _(
+                "Could not derive VAT amounts (no 19%/7% data found in item_wise_tax_detail)."
+            )
+        )
 
     return [
         {"vat_rate": vat_code, "amount": f"{gross_amount:.2f}"}
@@ -253,6 +321,7 @@ def _build_amounts_per_vat_rate(pos_inv) -> list[dict[str, str]]:
 # ---------------------------------------------------------------------------
 # Aus POS Invoice wird eine TSE Transaction generiert
 # ---------------------------------------------------------------------------
+
 
 def create_tse_transaction_for_pos_invoice(doc, method: str | None = None):
     """
@@ -266,7 +335,7 @@ def create_tse_transaction_for_pos_invoice(doc, method: str | None = None):
     if isinstance(doc, dict):
         doc = frappe.get_doc(doc)
 
-    # 2. Check ob wirklich POS Invoice 
+    # 2. Check ob wirklich POS Invoice
     if doc.doctype != "POS Invoice":
         return
 
@@ -295,12 +364,40 @@ def create_tse_transaction_for_pos_invoice(doc, method: str | None = None):
     tse_device = frappe.get_doc("TSE Security Device", tse_client.tse_security_device)
 
     # 6. Setzen der benötigten IDS in welcher TSS und mit welchem CLient die SPeicherung erfolgt
-    tss_id = tse_device.tss_id 
+    tss_id = tse_device.tss_id
     client_id = tse_client.client_id
 
     if not tss_id or not client_id:
         frappe.throw(
             _("TSE Device or TSE Client is missing provider IDs (tss_id / client_id).")
+        )
+
+    # 7. Falls bereits eine TSE Transaction verknüpft ist, Idempotenz sicherstellen
+    existing_tx_name = getattr(doc, "tse_transaction", None)
+    if existing_tx_name:
+        existing_tx = frappe.get_doc("TSE Transaction", existing_tx_name)
+
+        if (
+            getattr(existing_tx, "pos_invoice", None)
+            and existing_tx.pos_invoice != doc.name
+        ):
+            frappe.throw(
+                _(
+                    "POS Invoice {0} is linked to TSE Transaction {1}, "
+                    "which belongs to another POS Invoice ({2})."
+                ).format(doc.name, existing_tx_name, existing_tx.pos_invoice)
+            )
+
+        status = getattr(existing_tx, "transaction_status", None)
+        if status == "FINISHED":
+            # Bereits erfolgreich signiert -> keine neue Transaktion erzeugen
+            return
+
+        frappe.throw(
+            _(
+                "POS Invoice already has TSE Transaction {0} with status {1}. "
+                "Please resolve it before submitting again."
+            ).format(existing_tx_name, status or _("Unknown"))
         )
 
     # 7. Transaction-Typ bestimmen SALE / REFUND aus dem POS Invoice DocType
@@ -315,7 +412,7 @@ def create_tse_transaction_for_pos_invoice(doc, method: str | None = None):
     # 9. Schema aus der POS Invoice bauen
     schema = _build_receipt_schema_from_pos_invoice(doc)
 
-    # 10. Revision wird auf eins gesetzt ist somit die erste 
+    # 10. Revision wird auf eins gesetzt ist somit die erste
     #    Beim Anlegen Fachlich gesehen immer die erste
     tx_revision = 1
 
@@ -327,18 +424,20 @@ def create_tse_transaction_for_pos_invoice(doc, method: str | None = None):
     )
 
     # 12. Anlegen des Docs mit Zwischenstand
-    tse_tx = frappe.get_doc({
-        "doctype": "TSE Transaction",
-        "tse_security_device": tse_device.name,
-        "tse_client": tse_client.name,
-        "company": doc.company,
-        "pos_invoice": doc.name,
-        "transaction_type": tx_type,
-        "transaction_id": response.get("_id"),
-        "transaction_revision": tx_revision, # Sollte beim anlegen zuerst 1 sein
-        "transaction_status": response.get("state"), # Sollte ACTIVE sein
-        "start_time": datetime.fromtimestamp(response.get("time_start")),
-    })
+    tse_tx = frappe.get_doc(
+        {
+            "doctype": "TSE Transaction",
+            "tse_security_device": tse_device.name,
+            "tse_client": tse_client.name,
+            "company": doc.company,
+            "pos_invoice": doc.name,
+            "transaction_type": tx_type,
+            "transaction_id": response.get("_id"),
+            "transaction_revision": tx_revision,  # Sollte beim anlegen zuerst 1 sein
+            "transaction_status": response.get("state"),  # Sollte ACTIVE sein
+            "start_time": datetime.fromtimestamp(response.get("time_start")),
+        }
+    )
 
     # 13. Zwischenstand speichern falls etwas schief läuft
 
@@ -352,14 +451,15 @@ def create_tse_transaction_for_pos_invoice(doc, method: str | None = None):
 
     # 15. Transaktion update (update_transaction)
     #    Transaktion kann beednet werden im Restaurant Umfeld müsste noch die Update Funktion kommen
-    #TODO
-    
+    # TODO
+
     # 16. Transaktion finish (finish_transaction)
     response = provider.finish_transaction(
         tss_id=tss_id,
         client_id=client_id,
-        tx_id = tse_tx.transaction_id,
-        tx_revision=tx_revision+1, #TODO Revisions Nummer noch korrekt erfassen und hochzählen
+        tx_id=tse_tx.transaction_id,
+        tx_revision=tx_revision
+        + 1,  # TODO Revisions Nummer noch korrekt erfassen und hochzählen
         schema=schema,
     )
 
@@ -373,11 +473,14 @@ def create_tse_transaction_for_pos_invoice(doc, method: str | None = None):
     tse_tx.transaction_revision = response.get("revision")
     tse_tx.signature_counter = response.get("signature", {}).get("counter")
     tse_tx.transaction_number = response.get("number")
-    tse_tx.full_schema_req = frappe.as_json({
+    tse_tx.full_schema_req = frappe.as_json(
+        {
             "schema": schema,
             "client_id": client_id,
             "state": "FINISHED",
-        }, indent=2)
+        },
+        indent=2,
+    )
     tse_tx.full_schema_res = frappe.as_json(response, indent=2)
 
     # 19. VAT-Childs aus Schema
@@ -394,12 +497,19 @@ def create_tse_transaction_for_pos_invoice(doc, method: str | None = None):
         )
 
         if not vat_rate_name:
-            frappe.throw(_("Missing TSE VAT Rate configuration for vat_rate_code '{0}'.").format(vat_code))
+            frappe.throw(
+                _("Missing TSE VAT Rate configuration for vat_rate_code '{0}'.").format(
+                    vat_code
+                )
+            )
 
-        tse_tx.append("vat_rate", {
-            "vat_rate": vat_rate_name,
-            "amount": amount,
-        })
+        tse_tx.append(
+            "vat_rate",
+            {
+                "vat_rate": vat_rate_name,
+                "amount": amount,
+            },
+        )
 
     # 20. Payment-Childs aus Schema
     for pay_row in receipt.get("amounts_per_payment_type", []):
@@ -413,12 +523,19 @@ def create_tse_transaction_for_pos_invoice(doc, method: str | None = None):
         )
 
         if not payment_type_name:
-            frappe.throw(_("Missing TSE Payment Type configuration for payment_code '{0}'.").format(pay_code))
+            frappe.throw(
+                _(
+                    "Missing TSE Payment Type configuration for payment_code '{0}'."
+                ).format(pay_code)
+            )
 
-        tse_tx.append("payment_types", {
-            "payment_type": payment_type_name,
-            "amount": amount,
-        })
+        tse_tx.append(
+            "payment_types",
+            {
+                "payment_type": payment_type_name,
+                "amount": amount,
+            },
+        )
 
     # 21. TSE Transaction Updaten mit Daten und dann Submit
     tse_tx.flags.ignore_permissions = True
