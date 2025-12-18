@@ -4,6 +4,7 @@
 import frappe
 from frappe.model.document import Document
 
+
 class TSEVATRate(Document):
     def validate(self):
         if not self.company or not self.account:

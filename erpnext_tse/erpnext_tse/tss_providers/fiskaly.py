@@ -43,7 +43,17 @@ class FiskalyProvider(BaseTSEProvider):
     # --- configuration from settings ------------------------------------
 
     def get_base_url(self) -> str:
-        base_url = self.doc.base_url or "https://kassensichv-middleware.fiskaly.com/api/v2"
+        base_url = (
+            self.doc.base_url or "https://kassensichv-middleware.fiskaly.com/api/v2"
+        )
+        return base_url.rstrip("/")
+
+    def get_dsfinvk_base_url(self) -> str:
+        """Base-URL fuer DSFinV-K Export-API (separater Host)."""
+        base_url = (
+            getattr(self.doc, "dsfinvk_base_url", None)
+            or "https://dsfinvk.fiskaly.com/api/v1"
+        )
         return base_url.rstrip("/")
 
     def get_api_credentials(self) -> tuple[str, str]:
@@ -264,7 +274,11 @@ class FiskalyProvider(BaseTSEProvider):
 
         if not data.get("access_token"):
             err_code = data.get("code")
-            msg = data.get("message") or data.get("error") or "Auth response did not contain an access_token."
+            msg = (
+                data.get("message")
+                or data.get("error")
+                or "Auth response did not contain an access_token."
+            )
 
             self._log(
                 logging.WARNING,
@@ -317,7 +331,7 @@ class FiskalyProvider(BaseTSEProvider):
             "organization_id": claims.get("organization_id"),
             "access_token_expires_at": access_exp,
         }
-    
+
     def authenticate_admin(self, tss_id: str, admin_pin: str) -> dict[str, Any]:
         """Admin-Authentifizierung für eine TSS (authenticateAdmin)."""
         payload = {
@@ -329,8 +343,10 @@ class FiskalyProvider(BaseTSEProvider):
             path=f"/tss/{tss_id}/admin/auth",
             json=payload,
         )
-    
-    def change_admin_pin(self, tss_id: str, admin_puk: str, new_admin_pin: str) -> dict[str, Any]:
+
+    def change_admin_pin(
+        self, tss_id: str, admin_puk: str, new_admin_pin: str
+    ) -> dict[str, Any]:
         """Admin-PIN mit Admin-PUK setzen oder zurücksetzen (changeAdminPin). Auch für die Initialisierung einer erstellten TSS"""
         payload = {
             "admin_puk": admin_puk,
@@ -342,7 +358,7 @@ class FiskalyProvider(BaseTSEProvider):
             path=f"/tss/{tss_id}/admin",
             json=payload,
         )
-    
+
     def logout_admin(self, tss_id: str) -> dict[str, Any]:
         """Admin-Session explizit beenden (logoutAdmin)."""
         return self._request_json(
@@ -369,7 +385,7 @@ class FiskalyProvider(BaseTSEProvider):
         return self.update_from_auth_response(data)
 
     def request(self, method: str, path: str, **kwargs) -> requests.Response:
-        """Generic API call using bearer token + 401-retry."""
+        """Generic API call using bearer token + 401-retry (core API)."""
         base_url = self.get_base_url()
         url = f"{base_url.rstrip('/')}/{path.lstrip('/')}"
 
@@ -390,7 +406,7 @@ class FiskalyProvider(BaseTSEProvider):
         if resp.status_code != 401:
             return resp
 
-        # 401 → einmal neu auth + retry
+        # 401 -> einmal neu auth + retry
         self._log(
             logging.WARNING,
             "Received 401 from Fiskaly, retrying once after reauth",
@@ -404,34 +420,80 @@ class FiskalyProvider(BaseTSEProvider):
 
         headers["Authorization"] = f"Bearer {token}"
         return requests.request(method, url, headers=headers, timeout=15, **kwargs)
-    
+
+    def _dsfinvk_request(self, method: str, path: str, **kwargs) -> requests.Response:
+        """API call for DSFinV-K endpoints (separate host)."""
+        base_url = self.get_dsfinvk_base_url()
+        url = f"{base_url.rstrip('/')}/{path.lstrip('/')}"
+
+        token = self.ensure_valid_access_token()
+
+        headers = kwargs.pop("headers", {}) or {}
+        headers.setdefault("Authorization", f"Bearer {token}")
+        headers.setdefault("Content-Type", "application/json")
+
+        resp = requests.request(method, url, headers=headers, timeout=30, **kwargs)
+        if resp.status_code != 401:
+            return resp
+
+        # 401 -> re-auth einmal und Retry
+        data = self.run_auth_request()
+        self.update_from_auth_response(data)
+        token = self.ensure_valid_access_token()
+
+        headers["Authorization"] = f"Bearer {token}"
+        return requests.request(method, url, headers=headers, timeout=30, **kwargs)
+
     def _request_json(self, method: str, path: str, **kwargs) -> dict[str, Any]:
-        """Wrapper um request(), der immer ein Dict zurückgibt und Fehler schön aufbereitet."""
+        """Wrapper um request(), der immer ein Dict zurueckgibt und Fehler schoen aufbereitet."""
         resp = self.request(method, path, **kwargs)
 
         status = resp.status_code
         try:
             data = resp.json()
         except ValueError:
-            # falls der Body kein JSON ist → als Fehler behandeln
             err = self._parse_error_response(resp)
             frappe.throw(
                 f"Fiskaly returned a non-JSON response ({status}). "
                 f"Error: {err.get('message') or err.get('error')}"
             )
 
-        # Statuscode immer mitgeben, damit dein Log was zum Anzeigen hat
         if "status_code" not in data:
             data["status_code"] = status
 
-        # 2xx → ok, sonst Fehler werfen
         if 200 <= status < 300:
             return data
 
-        # Fehlerfall: vorhandene Struktur nutzen und Exception werfen
         err = self._parse_error_response(resp)
         frappe.throw(
             f"Fiskaly returned an error ({status}). "
+            f"Code: {err.get('code') or 'N/A'}, "
+            f"Message: {err.get('message') or err.get('error') or 'Unknown error'}"
+        )
+
+    def _dsfinvk_request_json(self, method: str, path: str, **kwargs) -> dict[str, Any]:
+        """JSON-Wrapper fuer DSFinV-K Endpunkte (separater Host)."""
+        resp = self._dsfinvk_request(method, path, **kwargs)
+
+        status = resp.status_code
+        try:
+            data = resp.json()
+        except ValueError:
+            err = self._parse_error_response(resp)
+            frappe.throw(
+                f"Fiskaly DSFinV-K returned a non-JSON response ({status}). "
+                f"Error: {err.get('message') or err.get('error')}"
+            )
+
+        if "status_code" not in data:
+            data["status_code"] = status
+
+        if 200 <= status < 300:
+            return data
+
+        err = self._parse_error_response(resp)
+        frappe.throw(
+            f"Fiskaly DSFinV-K returned an error ({status}). "
             f"Code: {err.get('code') or 'N/A'}, "
             f"Message: {err.get('message') or err.get('error') or 'Unknown error'}"
         )
@@ -440,9 +502,11 @@ class FiskalyProvider(BaseTSEProvider):
     # High-Level: TSS-Operationen für TSESecurityDevice
     # ---------------------------------------------------------------------
 
-    def create_tss(self, company: str, description: str | None = None) -> dict[str, Any]:
+    def create_tss(
+        self, company: str, description: str | None = None
+    ) -> dict[str, Any]:
         """TSS bei Fiskaly anlegen."""
-        
+
         # UUID für das anlegen der TSS generieren
         tss_id = str(uuid.uuid4())
 
@@ -458,7 +522,7 @@ class FiskalyProvider(BaseTSEProvider):
 
         data.setdefault("id", tss_id)
         return data
-    
+
     def deploy_tss(self, tss_id: str) -> dict[str, Any]:
         """TSS deployen: (State → UNINITIALIZED)."""
         payload = {
@@ -471,6 +535,20 @@ class FiskalyProvider(BaseTSEProvider):
             json=payload,
         )
         return data
+
+    def list_tss(self) -> dict[str, Any]:
+        """Alle TSS abrufen (fuer spaetere Synchronisation)."""
+        return self._request_json(
+            method="GET",
+            path="/tss",
+        )
+
+    def get_tss(self, tss_id: str) -> dict[str, Any]:
+        """Einzelne TSS abrufen."""
+        return self._request_json(
+            method="GET",
+            path=f"/tss/{tss_id}",
+        )
 
     def initialize_tss(self, tss_id: str) -> dict[str, Any]:
         """TSS initialisieren (State → INITIALIZED)."""
@@ -497,7 +575,7 @@ class FiskalyProvider(BaseTSEProvider):
             json=payload,
         )
         return data
-    
+
     # ---------------------------------------------------------------------
     # High-Level: Client-Operationen für TSE Client
     # ---------------------------------------------------------------------
@@ -540,7 +618,7 @@ class FiskalyProvider(BaseTSEProvider):
             json=payload,
         )
         return data
-        
+
     def register_client(self, tss_id: str, client_id: str) -> dict[str, Any]:
         """
         Client wird auf den Status "REGISTERED" gesetzt und kann somit eine TSS wieder verwenden
@@ -556,11 +634,38 @@ class FiskalyProvider(BaseTSEProvider):
             json=payload,
         )
         return data
-    
+
+    def list_clients(self, tss_id: str) -> dict[str, Any]:
+        """Alle Clients einer TSS abrufen (fuer spaetere Synchronisation)."""
+        return self._request_json(
+            method="GET",
+            path=f"/tss/{tss_id}/client",
+        )
+
+    def get_client(self, tss_id: str, client_id: str) -> dict[str, Any]:
+        """Einzelnen Client abrufen."""
+        return self._request_json(
+            method="GET",
+            path=f"/tss/{tss_id}/client/{client_id}",
+        )
 
     # ---------------------------------------------------------------------
     # High-Level: Transaction operations (SIGN DE upsertTransaction)
     # ---------------------------------------------------------------------
+
+    def list_transactions(self, tss_id: str) -> dict[str, Any]:
+        """Alle Transaktionen einer TSS abrufen (fuer spaetere Synchronisation)."""
+        return self._request_json(
+            method="GET",
+            path=f"/tss/{tss_id}/tx",
+        )
+
+    def get_transaction(self, tss_id: str, tx_id: str) -> dict[str, Any]:
+        """Einzelne Transaktion einer TSS abrufen."""
+        return self._request_json(
+            method="GET",
+            path=f"/tss/{tss_id}/tx/{tx_id}",
+        )
 
     def upsert_transaction(
         self,
@@ -579,7 +684,7 @@ class FiskalyProvider(BaseTSEProvider):
             path=f"/tss/{tss_id}/tx/{tx_id}?tx_revision={tx_revision}",
             json=body,
         )
-    
+
     def start_transaction(
         self,
         tss_id: str,
@@ -606,7 +711,7 @@ class FiskalyProvider(BaseTSEProvider):
             tx_revision=tx_revision,
             body=body,
         )
-    
+
     def finish_transaction(
         self,
         tss_id: str,
@@ -633,8 +738,8 @@ class FiskalyProvider(BaseTSEProvider):
             tx_id=tx_id,
             body=body,
         )
-    
-    #TODO
+
+    # TODO
     def cancel_transaction(
         self,
         tss_id: str,
@@ -660,4 +765,218 @@ class FiskalyProvider(BaseTSEProvider):
             tx_id=tx_id,
             tx_revision=tx_revision,
             body=body,
+        )
+
+    # ---------------------------------------------------------------------
+    # DSFinV-K: Exports
+    # ---------------------------------------------------------------------
+
+    def create_dsfinvk_export(
+        self,
+        *,
+        export_id: str | None = None,
+        by_creation_date: dict[str, Any] | None = None,
+        by_business_date: dict[str, Any] | None = None,
+        client_id: str | None = None,
+        archive_format: str | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Export-Job anlegen (DSFinV-K v1 /exports/{export_id})."""
+        export_id = export_id or str(uuid.uuid4())
+        payload: dict[str, Any] = {}
+
+        if by_creation_date:
+            payload.update(by_creation_date)
+        elif by_business_date:
+            payload.update(by_business_date)
+        else:
+            frappe.throw(
+                "Export requires either by_creation_date or by_business_date payload."
+            )
+
+        if client_id:
+            payload["client_id"] = client_id
+        if archive_format:
+            payload["format"] = archive_format
+        if metadata:
+            payload["metadata"] = metadata
+
+        data = self._dsfinvk_request_json(
+            method="PUT",
+            path=f"/exports/{export_id}",
+            json=payload,
+        )
+        data.setdefault("_id", export_id)
+        return data
+
+    def list_dsfinvk_exports(self, **query_params) -> dict[str, Any]:
+        """Alle Exporte abrufen (Supports: limit, offset, order_by, order, states, client_id, business_date_start/end)."""
+        return self._dsfinvk_request_json(
+            method="GET",
+            path="/exports",
+            params=query_params,
+        )
+
+    def get_dsfinvk_export(self, export_id: str) -> dict[str, Any]:
+        """Status eines Export-Jobs abrufen."""
+        return self._dsfinvk_request_json(
+            method="GET",
+            path=f"/exports/{export_id}",
+        )
+
+    def cancel_dsfinvk_export(self, export_id: str) -> dict[str, Any]:
+        """Export abbrechen / löschen."""
+        return self._dsfinvk_request_json(
+            method="DELETE",
+            path=f"/exports/{export_id}",
+        )
+
+    def get_dsfinvk_export_href(self, export_id: str) -> dict[str, Any]:
+        """Download-URL eines Exports abrufen (href)."""
+        return self._dsfinvk_request_json(
+            method="GET",
+            path=f"/exports/{export_id}/href",
+        )
+
+    def get_dsfinvk_export_metadata(self, export_id: str) -> dict[str, Any]:
+        """Metadata eines Exports abrufen."""
+        return self._dsfinvk_request_json(
+            method="GET",
+            path=f"/exports/{export_id}/metadata",
+        )
+
+    def upsert_dsfinvk_export_metadata(
+        self, export_id: str, metadata: dict[str, Any] | None
+    ) -> dict[str, Any]:
+        """Metadata eines Exports erstellen/aktualisieren."""
+        return self._dsfinvk_request_json(
+            method="PUT",
+            path=f"/exports/{export_id}/metadata",
+            json=metadata,
+        )
+
+    def download_dsfinvk_export(self, export_id: str) -> bytes:
+        """Fertigen Export (ZIP) herunterladen. Liefert Rohbytes zur Weiterverarbeitung."""
+        resp = self._dsfinvk_request(
+            method="GET",
+            path=f"/exports/{export_id}/download",
+        )
+        return resp.content
+
+    # ---------------------------------------------------------------------
+    # DSFinV-K: Cash Registers
+    # ---------------------------------------------------------------------
+
+    def list_cash_registers(self) -> dict[str, Any]:
+        """Alle Cash Registers abrufen (DSFinV-K)."""
+        return self._dsfinvk_request_json(
+            method="GET",
+            path="/cash_registers",
+        )
+
+    def get_cash_register(self, cash_register_id: str) -> dict[str, Any]:
+        """Einzelnes Cash Register abrufen."""
+        return self._dsfinvk_request_json(
+            method="GET",
+            path=f"/cash_registers/{cash_register_id}",
+        )
+
+    def create_cash_register(
+        self, payload: dict[str, Any], cash_register_id: str | None = None
+    ) -> dict[str, Any]:
+        """Cash Register anlegen/aktualisieren (PUT /cash_registers/{client_id})."""
+        cash_register_id = cash_register_id or str(uuid.uuid4())
+        data = self._dsfinvk_request_json(
+            method="PUT",
+            path=f"/cash_registers/{cash_register_id}",
+            json=payload,
+        )
+        data.setdefault("_id", cash_register_id)
+        return data
+
+    def get_cash_register_metadata(self, cash_register_id: str) -> dict[str, Any]:
+        """Metadata eines Cash Registers abrufen."""
+        return self._dsfinvk_request_json(
+            method="GET",
+            path=f"/cash_registers/{cash_register_id}/metadata",
+        )
+
+    def upsert_cash_register_metadata(
+        self, cash_register_id: str, metadata: dict[str, Any] | None
+    ) -> dict[str, Any]:
+        """Metadata eines Cash Registers erstellen/aktualisieren."""
+        return self._dsfinvk_request_json(
+            method="PUT",
+            path=f"/cash_registers/{cash_register_id}/metadata",
+            json=metadata,
+        )
+
+    # ---------------------------------------------------------------------
+    # DSFinV-K: Cash Point Closings
+    # ---------------------------------------------------------------------
+
+    def list_cash_point_closings(self) -> dict[str, Any]:
+        """Alle Cash Point Closings abrufen."""
+        return self._dsfinvk_request_json(
+            method="GET",
+            path="/cash_point_closings",
+        )
+
+    def get_cash_point_closing(self, closing_id: str) -> dict[str, Any]:
+        """Einzelnen Cash Point Closing abrufen."""
+        return self._dsfinvk_request_json(
+            method="GET",
+            path=f"/cash_point_closings/{closing_id}",
+        )
+
+    def get_cash_point_closing_details(self, closing_id: str) -> dict[str, Any]:
+        """Details eines Cash Point Closing abrufen."""
+        return self._dsfinvk_request_json(
+            method="GET",
+            path=f"/cash_point_closings/{closing_id}/details",
+        )
+
+    def get_cash_point_closing_reports(self, closing_id: str) -> dict[str, Any]:
+        """Reports eines Cash Point Closing abrufen."""
+        return self._dsfinvk_request_json(
+            method="GET",
+            path=f"/cash_point_closings/{closing_id}/reports",
+        )
+
+    def get_cash_point_closing_metadata(self, closing_id: str) -> dict[str, Any]:
+        """Metadata eines Cash Point Closing abrufen."""
+        return self._dsfinvk_request_json(
+            method="GET",
+            path=f"/cash_point_closings/{closing_id}/metadata",
+        )
+
+    def upsert_cash_point_closing_metadata(
+        self, closing_id: str, metadata: dict[str, Any] | None
+    ) -> dict[str, Any]:
+        """Metadata eines Cash Point Closing aktualisieren."""
+        return self._dsfinvk_request_json(
+            method="PUT",
+            path=f"/cash_point_closings/{closing_id}/metadata",
+            json=metadata,
+        )
+
+    def create_cash_point_closing(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Cash Point Closing anlegen"""
+
+        # UUID für closing eines cash points generieren
+        closing_id = str(uuid.uuid4())
+
+        data = self._dsfinvk_request_json(
+            method="PUT",
+            path=f"/cash_point_closings/{closing_id}",
+            json=payload,
+        )
+        data.setdefault("closing_id", closing_id)
+        return data
+
+    def delete_cash_point_closing(self, closing_id: str) -> dict[str, Any]:
+        """Cash Point Closing löschen."""
+        return self._dsfinvk_request_json(
+            method="DELETE",
+            path=f"/cash_point_closings/{closing_id}",
         )

@@ -7,6 +7,7 @@ from frappe import _
 
 from erpnext_tse.erpnext_tse.tss_providers import get_tse_provider
 
+
 class TSEClient(Document):
 
     # ---------- Basis / Validierung ----------
@@ -18,23 +19,26 @@ class TSEClient(Document):
         self.ensure_tse_enabled()
         if self.is_new():
             self.status = "DRAFT"
-            
-		# Sicherstellen, dass nur INITIALIZED-TSE verknüpft werden
+
+        # Sicherstellen, dass nur INITIALIZED-TSE verknüpft werden
         if self.tse_security_device:
             tss = frappe.get_doc("TSE Security Device", self.tse_security_device)
             if tss.tss_status != "INITIALIZED":
                 frappe.throw(
-                    _("Only TSE Security Devices with status 'INITIALIZED' "
-                      "can be linked to a TSE Client. Current status: {0}")
-                    .format(tss.tss_status)
+                    _(
+                        "Only TSE Security Devices with status 'INITIALIZED' "
+                        "can be linked to a TSE Client. Current status: {0}"
+                    ).format(tss.tss_status)
                 )
 
     def ensure_tse_enabled(self):
         settings = frappe.get_single("TSE Settings")
         if not getattr(settings, "enabled", None):
             frappe.throw(
-                _("TSE functionality is not enabled in TSE Settings. "
-                  "Please enable it before creating a TSE Client.")
+                _(
+                    "TSE functionality is not enabled in TSE Settings. "
+                    "Please enable it before creating a TSE Client."
+                )
             )
 
     # ---------- Provider-Event-Historie ----------
@@ -67,7 +71,6 @@ class TSEClient(Document):
 
         event.triggered_by = frappe.session.user
 
-
     # ---------- Aktion: Client beim Provider anlegen ----------
 
     @frappe.whitelist()
@@ -83,14 +86,17 @@ class TSEClient(Document):
 
         if self.client_status != "DRAFT":
             frappe.throw(
-                _("Client can only be created at provider when status is 'DRAFT'. "
-                  "Current status: {0}").format(self.status)
+                _(
+                    "Client can only be created at provider when status is 'DRAFT'. "
+                    "Current status: {0}"
+                ).format(self.status)
             )
 
         if self.client_id:
             frappe.throw(
-                _("This TSE Client already has a client_id ({0}).")
-                .format(self.client_id)
+                _("This TSE Client already has a client_id ({0}).").format(
+                    self.client_id
+                )
             )
 
         # Zugehörige TSS laden
@@ -136,17 +142,17 @@ class TSEClient(Document):
         self.client_id = resp.get("_id")
         self.client_status = resp.get("state")
         self.serial_number = resp.get("serial_number")
-        
+
         self.log_provider_event(
             event_type="CREATE_CLIENT",
             provider_action="create_client",
             resp=resp,
             status_before=old_status,
             status_after=self.client_status,
-            message_summary=_(
-                "Client {0} created at provider for TSS {1}"
-            ).format(self.name, tss.name),
-		)
+            message_summary=_("Client {0} created at provider for TSS {1}").format(
+                self.name, tss.name
+            ),
+        )
 
         # Dokument speichern
         self.save(ignore_permissions=True)
@@ -162,8 +168,10 @@ class TSEClient(Document):
 
         if self.client_status != "REGISTERED":
             frappe.throw(
-                _("Client can only be deregistered at provider when status is 'REGISTERED'. "
-                  "Current status: {0}").format(self.client_status)
+                _(
+                    "Client can only be deregistered at provider when status is 'REGISTERED'. "
+                    "Current status: {0}"
+                ).format(self.client_status)
             )
 
         # Zugehörige TSS laden
@@ -176,8 +184,7 @@ class TSEClient(Document):
 
         try:
             resp = provider.deregister_client(
-                tss_id=tss.tss_id,
-                client_id=self.client_id
+                tss_id=tss.tss_id, client_id=self.client_id
             )
 
         except Exception as e:
@@ -199,17 +206,17 @@ class TSEClient(Document):
 
         # Erfolgreich Client deregestriert → DEREGISTER
         self.client_status = resp.get("state")
-        
+
         self.log_provider_event(
             event_type="DEREGISTER_CLIENT",
             provider_action="deregister_client",
             resp=resp,
             status_before=old_status,
             status_after=self.client_status,
-            message_summary=_(
-                "Client {0} deregistered at provider for TSS {1}"
-            ).format(self.name, tss.name),
-		)
+            message_summary=_("Client {0} deregistered at provider for TSS {1}").format(
+                self.name, tss.name
+            ),
+        )
 
         # Dokument speichern
         self.save(ignore_permissions=True)
@@ -225,8 +232,10 @@ class TSEClient(Document):
 
         if self.client_status != "DEREGISTERED":
             frappe.throw(
-                _("Client can only be registered at provider when status is 'DEREGISTERED'. "
-                  "Current status: {0}").format(self.client_status)
+                _(
+                    "Client can only be registered at provider when status is 'DEREGISTERED'. "
+                    "Current status: {0}"
+                ).format(self.client_status)
             )
 
         # Zugehörige TSS laden
@@ -238,10 +247,7 @@ class TSEClient(Document):
         old_status = self.client_status
 
         try:
-            resp = provider.register_client(
-                tss_id=tss.tss_id,
-                client_id=self.client_id
-            )
+            resp = provider.register_client(tss_id=tss.tss_id, client_id=self.client_id)
 
         except Exception as e:
             self.status = "ERROR"
@@ -262,17 +268,17 @@ class TSEClient(Document):
 
         # Erfolgreich Client regestriert → REGISTER
         self.client_status = resp.get("state")
-        
+
         self.log_provider_event(
             event_type="REGISTER_CLIENT",
             provider_action="register_client",
             resp=resp,
             status_before=old_status,
             status_after=self.client_status,
-            message_summary=_(
-                "Client {0} registered at provider for TSS {1}"
-            ).format(self.name, tss.name),
-		)
+            message_summary=_("Client {0} registered at provider for TSS {1}").format(
+                self.name, tss.name
+            ),
+        )
 
         # Dokument speichern
         self.save(ignore_permissions=True)

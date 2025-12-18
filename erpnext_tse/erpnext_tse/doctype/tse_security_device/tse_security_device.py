@@ -26,8 +26,10 @@ class TSESecurityDevice(Document):
         settings = frappe.get_single("TSE Settings")
         if not getattr(settings, "enabled", None):
             frappe.throw(
-                _("TSE functionality is not enabled in TSE Settings. "
-                  "Please enable it before creating a TSE Security Device.")
+                _(
+                    "TSE functionality is not enabled in TSE Settings. "
+                    "Please enable it before creating a TSE Security Device."
+                )
             )
 
     @staticmethod
@@ -35,7 +37,7 @@ class TSESecurityDevice(Document):
         # Ziffern verwenden
         digits = string.digits
         return "".join(secrets.choice(digits) for _ in range(length))
-    
+
     def _ensure_admin_pin_and_auth(self, provider):
         """Sorgt dafür, dass ein Admin-PIN existiert und führt authenticate_admin aus."""
 
@@ -43,7 +45,9 @@ class TSESecurityDevice(Document):
             frappe.throw("Es ist noch keine TSS-ID hinterlegt.")
 
         if not self.get_password("admin_puk"):
-            frappe.throw("Kein Admin-PUK gespeichert. Bitte TSS neu anlegen oder PUK nachtragen.")
+            frappe.throw(
+                "Kein Admin-PUK gespeichert. Bitte TSS neu anlegen oder PUK nachtragen."
+            )
 
         # 1) Falls noch kein admin_pin gesetzt ist → zufällig generieren + bei Fiskaly setzen
         current_pin = self.get_password("admin_pin", raise_exception=False)
@@ -113,8 +117,10 @@ class TSESecurityDevice(Document):
 
         if self.tss_status != "DRAFT":
             frappe.throw(
-                _("TSS can only be created at provider when status is 'DRAFT'. "
-                  "Current status: {0}").format(self.tss_status)
+                _(
+                    "TSS can only be created at provider when status is 'DRAFT'. "
+                    "Current status: {0}"
+                ).format(self.tss_status)
             )
 
         settings = frappe.get_single("TSE Settings")
@@ -152,11 +158,11 @@ class TSESecurityDevice(Document):
             status_after=self.tss_status,
             message_summary=_("TSS created at provider"),
         )
-        
-		# Dokument speichern
+
+        # Dokument speichern
         self.save(ignore_permissions=True)
         frappe.db.commit()
-        
+
     @frappe.whitelist()
     def deploy_tss_at_provider(self):
         """TSS deployen: Provider-State CREATED → UNINITIALIZED, interner Status ebenfalls."""
@@ -167,9 +173,11 @@ class TSESecurityDevice(Document):
 
         if self.tss_status != "CREATED":
             frappe.throw(
-            	_("TSS can only be deployed when status is 'CREATED'. "
-				"Current status: {0}").format(self.tss_status)
-			)
+                _(
+                    "TSS can only be deployed when status is 'CREATED'. "
+                    "Current status: {0}"
+                ).format(self.tss_status)
+            )
 
         settings = frappe.get_single("TSE Settings")
         provider = get_tse_provider(settings)
@@ -181,36 +189,36 @@ class TSESecurityDevice(Document):
         except Exception as e:
             self.tss_status = "ERROR"
             self.log_provider_event(
-				event_type="DEPLOY_TSS_FAILED",
-				provider_action="deploy_tss",
-				resp={"error": {"message": str(e)}},
-				status_before=old_status,
-				status_after=self.tss_status,
-				message_summary=_("Error while deploying TSS at provider"),
-			)
+                event_type="DEPLOY_TSS_FAILED",
+                provider_action="deploy_tss",
+                resp={"error": {"message": str(e)}},
+                status_before=old_status,
+                status_after=self.tss_status,
+                message_summary=_("Error while deploying TSS at provider"),
+            )
             raise
 
-		# Erfolgreich → UNINITIALIZED
+        # Erfolgreich → UNINITIALIZED
         self.tss_status = "UNINITIALIZED"
 
         self.log_provider_event(
-			event_type="DEPLOY_TSS",
-			provider_action="deploy_tss",
-			resp=resp,
-			status_before=old_status,
-			status_after=self.tss_status,
-			message_summary=_("TSS deployed at provider (state UNINITIALIZED)"),
-		)
+            event_type="DEPLOY_TSS",
+            provider_action="deploy_tss",
+            resp=resp,
+            status_before=old_status,
+            status_after=self.tss_status,
+            message_summary=_("TSS deployed at provider (state UNINITIALIZED)"),
+        )
 
         # Dokument speichern
         self.save(ignore_permissions=True)
         frappe.db.commit()
 
         return {
-			"tss_id": self.tss_id,
-			"tss_status": self.tss_status,
-		}
-    
+            "tss_id": self.tss_id,
+            "tss_status": self.tss_status,
+        }
+
     @frappe.whitelist()
     def initialize_tss_at_provider(self):
         """
@@ -224,8 +232,10 @@ class TSESecurityDevice(Document):
 
         if self.tss_status != "UNINITIALIZED":
             frappe.throw(
-                _("TSS can only be initialized when status is 'UNINITIALIZED'. "
-                  "Current status: {0}").format(self.tss_status)
+                _(
+                    "TSS can only be initialized when status is 'UNINITIALIZED'. "
+                    "Current status: {0}"
+                ).format(self.tss_status)
             )
 
         settings = frappe.get_single("TSE Settings")
@@ -265,8 +275,8 @@ class TSESecurityDevice(Document):
             status_after=self.tss_status,
             message_summary=_("TSS initialized at provider"),
         )
-        
-		# Dokument speichern
+
+        # Dokument speichern
         self.save(ignore_permissions=True)
         frappe.db.commit()
 
@@ -284,8 +294,10 @@ class TSESecurityDevice(Document):
 
         if self.tss_status not in ("UNINITIALIZED", "INITIALIZED"):
             frappe.throw(
-                _("TSS can only be disabled when status is 'INITIALIZED' or 'INITIALIZED'. "
-                  "Current status: {0}").format(self.tss_status)
+                _(
+                    "TSS can only be disabled when status is 'INITIALIZED' or 'INITIALIZED'. "
+                    "Current status: {0}"
+                ).format(self.tss_status)
             )
 
         settings = frappe.get_single("TSE Settings")

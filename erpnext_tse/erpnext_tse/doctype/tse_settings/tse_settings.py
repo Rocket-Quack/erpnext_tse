@@ -11,19 +11,17 @@ from frappe.model.document import Document
 from erpnext_tse.erpnext_tse.tss_providers.base import BaseTSEProvider
 from erpnext_tse.erpnext_tse.tss_providers.fiskaly import FiskalyProvider
 
+
 class TSESettings(Document):
     """Global settings for TSE integration."""
 
     def get_provider_name(self) -> str:
-        """Return the normalized provider name from settings.
-
-        Add a Select field 'tse_provider' in the DocType with e.g. options:
-        - Fiskaly
-        - (future providers...)
-        """
+        """Return the normalized provider name from settings."""
         name = (self.tse_provider or "").strip().lower()
         if not name:
-            frappe.throw("No TSE provider configured. Please select a TSE Provider in TSE Settings.")
+            frappe.throw(
+                "No TSE provider configured. Please select a TSE Provider in TSE Settings."
+            )
         return name
 
     def get_provider(self) -> BaseTSEProvider:
@@ -36,10 +34,13 @@ class TSESettings(Document):
         # Placeholder for future providers
         frappe.throw(f"Unsupported TSE provider: {self.tse_provider or name}")
 
-def validate(self):
-	"""Basic validation for TSE Settings."""
-	if self.enabled and not self.tse_provider:
-		frappe.throw("You must choose a TSE Provider before enabling the TSE integration.")
+    def validate(self):
+        """Basic validation for TSE Settings."""
+        if self.enabled and not self.tse_provider:
+            frappe.throw(
+                "You must choose a TSE Provider before enabling the TSE integration."
+            )
+
 
 # -------------------------------------------------------------------------
 # Whitelisted API for the client script (Test Auth button)
