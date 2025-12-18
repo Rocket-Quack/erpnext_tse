@@ -472,6 +472,20 @@ class FiskalyProvider(BaseTSEProvider):
         )
         return data
 
+    def list_tss(self) -> dict[str, Any]:
+        """Alle TSS abrufen (fuer spaetere Synchronisation)."""
+        return self._request_json(
+            method="GET",
+            path="/tss",
+        )
+
+    def get_tss(self, tss_id: str) -> dict[str, Any]:
+        """Einzelne TSS abrufen."""
+        return self._request_json(
+            method="GET",
+            path=f"/tss/{tss_id}",
+        )
+
     def initialize_tss(self, tss_id: str) -> dict[str, Any]:
         """TSS initialisieren (State → INITIALIZED)."""
         payload = {
@@ -556,17 +570,45 @@ class FiskalyProvider(BaseTSEProvider):
             json=payload,
         )
         return data
+
+    def list_clients(self, tss_id: str) -> dict[str, Any]:
+        """Alle Clients einer TSS abrufen (fuer spaetere Synchronisation)."""
+        return self._request_json(
+            method="GET",
+            path=f"/tss/{tss_id}/client",
+        )
+
+    def get_client(self, tss_id: str, client_id: str) -> dict[str, Any]:
+        """Einzelnen Client abrufen."""
+        return self._request_json(
+            method="GET",
+            path=f"/tss/{tss_id}/client/{client_id}",
+        )
     
 
-    # ---------------------------------------------------------------------
-    # High-Level: Transaction operations (SIGN DE upsertTransaction)
-    # ---------------------------------------------------------------------
+	# ---------------------------------------------------------------------
+	# High-Level: Transaction operations (SIGN DE upsertTransaction)
+	# ---------------------------------------------------------------------
 
+    def list_transactions(self, tss_id: str) -> dict[str, Any]:
+        """Alle Transaktionen einer TSS abrufen (fuer spaetere Synchronisation)."""
+        return self._request_json(
+			method="GET",
+			path=f"/tss/{tss_id}/tx",
+		)
+
+    def get_transaction(self, tss_id: str, tx_id: str) -> dict[str, Any]:
+        """Einzelne Transaktion einer TSS abrufen."""
+        return self._request_json(
+			method="GET",
+			path=f"/tss/{tss_id}/tx/{tx_id}",
+		)
+	
     def upsert_transaction(
-        self,
-        tss_id: str,
-        tx_id: str,
-        tx_revision: int,
+		self,
+		tss_id: str,
+		tx_id: str,
+		tx_revision: int,
         body: dict[str, Any],
     ) -> dict[str, Any]:
         """
