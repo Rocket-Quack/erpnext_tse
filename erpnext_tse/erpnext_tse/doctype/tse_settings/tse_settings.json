@@ -13,6 +13,7 @@
   "sb_zugangsdaten",
   "environment",
   "base_url",
+  "dsfinvk_base_url",
   "api_key",
   "api_secret",
   "organisation_tab",
@@ -99,7 +100,14 @@
   {
    "fieldname": "base_url",
    "fieldtype": "Data",
-   "label": "Base URL"
+   "label": "Base URL",
+   "description": "Optional. Overrides default https://kassensichv-middleware.fiskaly.com/api/v2"
+  },
+  {
+   "fieldname": "dsfinvk_base_url",
+   "fieldtype": "Data",
+   "label": "DSFinV-K Base URL",
+   "description": "Optional. Overrides default https://dsfinvk.fiskaly.com/api/v1"
   },
   {
    "fieldname": "api_key",
