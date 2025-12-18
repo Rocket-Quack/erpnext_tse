@@ -48,6 +48,14 @@ class FiskalyProvider(BaseTSEProvider):
         )
         return base_url.rstrip("/")
 
+    def get_dsfinvk_base_url(self) -> str:
+        """Base-URL fuer DSFinV-K Export-API (separater Host)."""
+        base_url = (
+            getattr(self.doc, "dsfinvk_base_url", None)
+            or "https://dsfinvk.fiskaly.com/api/v1"
+        )
+        return base_url.rstrip("/")
+
     def get_api_credentials(self) -> tuple[str, str]:
         api_key = self.doc.get_password("api_key")
         api_secret = self.doc.get_password("api_secret")
@@ -377,7 +385,7 @@ class FiskalyProvider(BaseTSEProvider):
         return self.update_from_auth_response(data)
 
     def request(self, method: str, path: str, **kwargs) -> requests.Response:
-        """Generic API call using bearer token + 401-retry."""
+        """Generic API call using bearer token + 401-retry (core API)."""
         base_url = self.get_base_url()
         url = f"{base_url.rstrip('/')}/{path.lstrip('/')}"
 
@@ -398,7 +406,7 @@ class FiskalyProvider(BaseTSEProvider):
         if resp.status_code != 401:
             return resp
 
-        # 401 → einmal neu auth + retry
+        # 401 -> einmal neu auth + retry
         self._log(
             logging.WARNING,
             "Received 401 from Fiskaly, retrying once after reauth",
@@ -413,33 +421,79 @@ class FiskalyProvider(BaseTSEProvider):
         headers["Authorization"] = f"Bearer {token}"
         return requests.request(method, url, headers=headers, timeout=15, **kwargs)
 
+    def _dsfinvk_request(self, method: str, path: str, **kwargs) -> requests.Response:
+        """API call for DSFinV-K endpoints (separate host)."""
+        base_url = self.get_dsfinvk_base_url()
+        url = f"{base_url.rstrip('/')}/{path.lstrip('/')}"
+
+        token = self.ensure_valid_access_token()
+
+        headers = kwargs.pop("headers", {}) or {}
+        headers.setdefault("Authorization", f"Bearer {token}")
+        headers.setdefault("Content-Type", "application/json")
+
+        resp = requests.request(method, url, headers=headers, timeout=30, **kwargs)
+        if resp.status_code != 401:
+            return resp
+
+        # 401 -> re-auth einmal und Retry
+        data = self.run_auth_request()
+        self.update_from_auth_response(data)
+        token = self.ensure_valid_access_token()
+
+        headers["Authorization"] = f"Bearer {token}"
+        return requests.request(method, url, headers=headers, timeout=30, **kwargs)
+
     def _request_json(self, method: str, path: str, **kwargs) -> dict[str, Any]:
-        """Wrapper um request(), der immer ein Dict zurückgibt und Fehler schön aufbereitet."""
+        """Wrapper um request(), der immer ein Dict zurueckgibt und Fehler schoen aufbereitet."""
         resp = self.request(method, path, **kwargs)
 
         status = resp.status_code
         try:
             data = resp.json()
         except ValueError:
-            # falls der Body kein JSON ist → als Fehler behandeln
             err = self._parse_error_response(resp)
             frappe.throw(
                 f"Fiskaly returned a non-JSON response ({status}). "
                 f"Error: {err.get('message') or err.get('error')}"
             )
 
-        # Statuscode immer mitgeben, damit dein Log was zum Anzeigen hat
         if "status_code" not in data:
             data["status_code"] = status
 
-        # 2xx → ok, sonst Fehler werfen
         if 200 <= status < 300:
             return data
 
-        # Fehlerfall: vorhandene Struktur nutzen und Exception werfen
         err = self._parse_error_response(resp)
         frappe.throw(
             f"Fiskaly returned an error ({status}). "
+            f"Code: {err.get('code') or 'N/A'}, "
+            f"Message: {err.get('message') or err.get('error') or 'Unknown error'}"
+        )
+
+    def _dsfinvk_request_json(self, method: str, path: str, **kwargs) -> dict[str, Any]:
+        """JSON-Wrapper fuer DSFinV-K Endpunkte (separater Host)."""
+        resp = self._dsfinvk_request(method, path, **kwargs)
+
+        status = resp.status_code
+        try:
+            data = resp.json()
+        except ValueError:
+            err = self._parse_error_response(resp)
+            frappe.throw(
+                f"Fiskaly DSFinV-K returned a non-JSON response ({status}). "
+                f"Error: {err.get('message') or err.get('error')}"
+            )
+
+        if "status_code" not in data:
+            data["status_code"] = status
+
+        if 200 <= status < 300:
+            return data
+
+        err = self._parse_error_response(resp)
+        frappe.throw(
+            f"Fiskaly DSFinV-K returned an error ({status}). "
             f"Code: {err.get('code') or 'N/A'}, "
             f"Message: {err.get('message') or err.get('error') or 'Unknown error'}"
         )
@@ -712,3 +766,44 @@ class FiskalyProvider(BaseTSEProvider):
             tx_revision=tx_revision,
             body=body,
         )
+
+    # ---------------------------------------------------------------------
+    # DSFinV-K Export / Reports (separater Host)
+    # ---------------------------------------------------------------------
+
+    def create_dsfinvk_export(
+        self,
+        tss_id: str,
+        from_ts: str,
+        to_ts: str,
+        client_ids: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Export-Job anlegen (DSFinV-K)."""
+        payload: dict[str, Any] = {
+            "tss_id": tss_id,
+            "from": from_ts,
+            "to": to_ts,
+        }
+        if client_ids:
+            payload["client_ids"] = client_ids
+
+        return self._dsfinvk_request_json(
+            method="POST",
+            path="/dsfinvk/export",
+            json=payload,
+        )
+
+    def get_dsfinvk_export(self, export_id: str) -> dict[str, Any]:
+        """Status eines Export-Jobs abrufen."""
+        return self._dsfinvk_request_json(
+            method="GET",
+            path=f"/dsfinvk/export/{export_id}",
+        )
+
+    def download_dsfinvk_export(self, export_id: str) -> bytes:
+        """Fertigen Export (ZIP) herunterladen. Liefert Rohbytes zur Weiterverarbeitung."""
+        resp = self._dsfinvk_request(
+            method="GET",
+            path=f"/dsfinvk/export/{export_id}/file",
+        )
+        return resp.content
