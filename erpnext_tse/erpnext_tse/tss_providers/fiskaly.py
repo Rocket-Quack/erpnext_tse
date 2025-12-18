@@ -768,42 +768,215 @@ class FiskalyProvider(BaseTSEProvider):
         )
 
     # ---------------------------------------------------------------------
-    # DSFinV-K Export / Reports (separater Host)
+    # DSFinV-K: Exports
     # ---------------------------------------------------------------------
 
     def create_dsfinvk_export(
         self,
-        tss_id: str,
-        from_ts: str,
-        to_ts: str,
-        client_ids: list[str] | None = None,
+        *,
+        export_id: str | None = None,
+        by_creation_date: dict[str, Any] | None = None,
+        by_business_date: dict[str, Any] | None = None,
+        client_id: str | None = None,
+        archive_format: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Export-Job anlegen (DSFinV-K)."""
-        payload: dict[str, Any] = {
-            "tss_id": tss_id,
-            "from": from_ts,
-            "to": to_ts,
-        }
-        if client_ids:
-            payload["client_ids"] = client_ids
+        """Export-Job anlegen (DSFinV-K v1 /exports/{export_id})."""
+        export_id = export_id or str(uuid.uuid4())
+        payload: dict[str, Any] = {}
 
-        return self._dsfinvk_request_json(
-            method="POST",
-            path="/dsfinvk/export",
+        if by_creation_date:
+            payload.update(by_creation_date)
+        elif by_business_date:
+            payload.update(by_business_date)
+        else:
+            frappe.throw(
+                "Export requires either by_creation_date or by_business_date payload."
+            )
+
+        if client_id:
+            payload["client_id"] = client_id
+        if archive_format:
+            payload["format"] = archive_format
+        if metadata:
+            payload["metadata"] = metadata
+
+        data = self._dsfinvk_request_json(
+            method="PUT",
+            path=f"/exports/{export_id}",
             json=payload,
+        )
+        data.setdefault("_id", export_id)
+        return data
+
+    def list_dsfinvk_exports(self, **query_params) -> dict[str, Any]:
+        """Alle Exporte abrufen (Supports: limit, offset, order_by, order, states, client_id, business_date_start/end)."""
+        return self._dsfinvk_request_json(
+            method="GET",
+            path="/exports",
+            params=query_params,
         )
 
     def get_dsfinvk_export(self, export_id: str) -> dict[str, Any]:
         """Status eines Export-Jobs abrufen."""
         return self._dsfinvk_request_json(
             method="GET",
-            path=f"/dsfinvk/export/{export_id}",
+            path=f"/exports/{export_id}",
+        )
+
+    def cancel_dsfinvk_export(self, export_id: str) -> dict[str, Any]:
+        """Export abbrechen / löschen."""
+        return self._dsfinvk_request_json(
+            method="DELETE",
+            path=f"/exports/{export_id}",
+        )
+
+    def get_dsfinvk_export_href(self, export_id: str) -> dict[str, Any]:
+        """Download-URL eines Exports abrufen (href)."""
+        return self._dsfinvk_request_json(
+            method="GET",
+            path=f"/exports/{export_id}/href",
+        )
+
+    def get_dsfinvk_export_metadata(self, export_id: str) -> dict[str, Any]:
+        """Metadata eines Exports abrufen."""
+        return self._dsfinvk_request_json(
+            method="GET",
+            path=f"/exports/{export_id}/metadata",
+        )
+
+    def upsert_dsfinvk_export_metadata(
+        self, export_id: str, metadata: dict[str, Any] | None
+    ) -> dict[str, Any]:
+        """Metadata eines Exports erstellen/aktualisieren."""
+        return self._dsfinvk_request_json(
+            method="PUT",
+            path=f"/exports/{export_id}/metadata",
+            json=metadata,
         )
 
     def download_dsfinvk_export(self, export_id: str) -> bytes:
         """Fertigen Export (ZIP) herunterladen. Liefert Rohbytes zur Weiterverarbeitung."""
         resp = self._dsfinvk_request(
             method="GET",
-            path=f"/dsfinvk/export/{export_id}/file",
+            path=f"/exports/{export_id}/download",
         )
         return resp.content
+
+    # ---------------------------------------------------------------------
+    # DSFinV-K: Cash Registers
+    # ---------------------------------------------------------------------
+
+    def list_cash_registers(self) -> dict[str, Any]:
+        """Alle Cash Registers abrufen (DSFinV-K)."""
+        return self._dsfinvk_request_json(
+            method="GET",
+            path="/cash_registers",
+        )
+
+    def get_cash_register(self, cash_register_id: str) -> dict[str, Any]:
+        """Einzelnes Cash Register abrufen."""
+        return self._dsfinvk_request_json(
+            method="GET",
+            path=f"/cash_registers/{cash_register_id}",
+        )
+
+    def create_cash_register(
+        self, payload: dict[str, Any], cash_register_id: str | None = None
+    ) -> dict[str, Any]:
+        """Cash Register anlegen/aktualisieren (PUT /cash_registers/{client_id})."""
+        cash_register_id = cash_register_id or str(uuid.uuid4())
+        data = self._dsfinvk_request_json(
+            method="PUT",
+            path=f"/cash_registers/{cash_register_id}",
+            json=payload,
+        )
+        data.setdefault("_id", cash_register_id)
+        return data
+
+    def get_cash_register_metadata(self, cash_register_id: str) -> dict[str, Any]:
+        """Metadata eines Cash Registers abrufen."""
+        return self._dsfinvk_request_json(
+            method="GET",
+            path=f"/cash_registers/{cash_register_id}/metadata",
+        )
+
+    def upsert_cash_register_metadata(
+        self, cash_register_id: str, metadata: dict[str, Any] | None
+    ) -> dict[str, Any]:
+        """Metadata eines Cash Registers erstellen/aktualisieren."""
+        return self._dsfinvk_request_json(
+            method="PUT",
+            path=f"/cash_registers/{cash_register_id}/metadata",
+            json=metadata,
+        )
+
+    # ---------------------------------------------------------------------
+    # DSFinV-K: Cash Point Closings
+    # ---------------------------------------------------------------------
+
+    def list_cash_point_closings(self) -> dict[str, Any]:
+        """Alle Cash Point Closings abrufen."""
+        return self._dsfinvk_request_json(
+            method="GET",
+            path="/cash_point_closings",
+        )
+
+    def get_cash_point_closing(self, closing_id: str) -> dict[str, Any]:
+        """Einzelnen Cash Point Closing abrufen."""
+        return self._dsfinvk_request_json(
+            method="GET",
+            path=f"/cash_point_closings/{closing_id}",
+        )
+
+    def get_cash_point_closing_details(self, closing_id: str) -> dict[str, Any]:
+        """Details eines Cash Point Closing abrufen."""
+        return self._dsfinvk_request_json(
+            method="GET",
+            path=f"/cash_point_closings/{closing_id}/details",
+        )
+
+    def get_cash_point_closing_reports(self, closing_id: str) -> dict[str, Any]:
+        """Reports eines Cash Point Closing abrufen."""
+        return self._dsfinvk_request_json(
+            method="GET",
+            path=f"/cash_point_closings/{closing_id}/reports",
+        )
+
+    def get_cash_point_closing_metadata(self, closing_id: str) -> dict[str, Any]:
+        """Metadata eines Cash Point Closing abrufen."""
+        return self._dsfinvk_request_json(
+            method="GET",
+            path=f"/cash_point_closings/{closing_id}/metadata",
+        )
+
+    def upsert_cash_point_closing_metadata(
+        self, closing_id: str, metadata: dict[str, Any] | None
+    ) -> dict[str, Any]:
+        """Metadata eines Cash Point Closing aktualisieren."""
+        return self._dsfinvk_request_json(
+            method="PUT",
+            path=f"/cash_point_closings/{closing_id}/metadata",
+            json=metadata,
+        )
+
+    def create_cash_point_closing(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Cash Point Closing anlegen"""
+
+        # UUID für closing eines cash points generieren
+        closing_id = str(uuid.uuid4())
+
+        data = self._dsfinvk_request_json(
+            method="PUT",
+            path=f"/cash_point_closings/{closing_id}",
+            json=payload,
+        )
+        data.setdefault("closing_id", closing_id)
+        return data
+
+    def delete_cash_point_closing(self, closing_id: str) -> dict[str, Any]:
+        """Cash Point Closing löschen."""
+        return self._dsfinvk_request_json(
+            method="DELETE",
+            path=f"/cash_point_closings/{closing_id}",
+        )
