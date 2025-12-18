@@ -303,14 +303,6 @@ def create_tse_transaction_for_pos_invoice(doc, method: str | None = None):
             _("TSE Device or TSE Client is missing provider IDs (tss_id / client_id).")
         )
 
-    if not tss_id or not client_id:
-        frappe.throw(
-            _(
-                "TSE Device or TSE Client is missing provider IDs "
-                "(tss_id / client_id)."
-            )
-        )
-
     # 7. Transaction-Typ bestimmen SALE / REFUND aus dem POS Invoice DocType
     tx_type = "SALE"
     if getattr(doc, "is_return", 0):
