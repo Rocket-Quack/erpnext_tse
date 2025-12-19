@@ -33,7 +33,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Event Type",
-   "options": "CREATE_TSS\nDEPLOY_TSS\nINITIALIZE_TSS\nSET_ADMIN_PIN\nUPDATE_STATUS\nDISABLE_TSS\nDELETE_TSS\nOTHER"
+   "options": "CREATE_TSS\nDEPLOY_TSS\nINITIALIZE_TSS\nSET_ADMIN_PIN\nUPDATE_STATUS\nUPDATE_STATUS_RECOVERY\nDISABLE_TSS\nDELETE_TSS\nOTHER"
   },
   {
    "fieldname": "provider_action",
@@ -107,7 +107,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-12-06 14:54:45.014400",
+ "modified": "2025-12-19 21:13:03.542969",
  "modified_by": "Administrator",
  "module": "ERPNext TSE",
  "name": "TSE Security Device Provider Event",
