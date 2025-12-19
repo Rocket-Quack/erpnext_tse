@@ -1,6 +1,5 @@
 {
  "actions": [],
- "allow_rename": 1,
  "autoname": "TSE-.#####.",
  "creation": "2025-12-03 22:15:22.545313",
  "doctype": "DocType",
@@ -20,6 +19,7 @@
   "tss_serial_number",
   "activated_at",
   "deactivated_at",
+  "tss_certificate",
   "provider_responses_tab",
   "column_break_nxha",
   "provider_events"
@@ -57,13 +57,14 @@
    "fieldname": "tss_id",
    "fieldtype": "Data",
    "label": "TSE ID",
-   "read_only": 1
+   "read_only": 1,
+   "unique": 1
   },
   {
    "fieldname": "tss_status",
    "fieldtype": "Select",
    "label": "TSE Status",
-   "options": "DRAFT\nCREATED\nUNINITIALIZED\nINITIALIZED\nDISABLED\nERROR",
+   "options": "DRAFT\nCREATED\nUNINITIALIZED\nINITIALIZED\nDISABLED\nORPHANED\nERROR",
    "read_only": 1
   },
   {
@@ -121,11 +122,17 @@
    "fieldtype": "Datetime",
    "label": "Admin PIN set at",
    "read_only": 1
+  },
+  {
+   "fieldname": "tss_certificate",
+   "fieldtype": "Small Text",
+   "label": "Certificate",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "links": [],
- "modified": "2025-12-07 02:17:11.205234",
+ "modified": "2025-12-19 21:38:59.509080",
  "modified_by": "Administrator",
  "module": "ERPNext TSE",
  "name": "TSE Security Device",

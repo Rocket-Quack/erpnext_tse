@@ -149,6 +149,7 @@ class TSESecurityDevice(Document):
         self.tss_id = resp.get("id")
         self.admin_puk = resp.get("admin_puk")
         self.tss_status = "CREATED"
+        self.tss_certificate = resp.get("certificate")
 
         self.log_provider_event(
             event_type="CREATE_TSS",
@@ -162,6 +163,13 @@ class TSESecurityDevice(Document):
         # Dokument speichern
         self.save(ignore_permissions=True)
         frappe.db.commit()
+
+        # Rückgabe für Client: Admin-PUK sofort anzeigen, da später nicht abrufbar auch im Recover Fall
+        return {
+            "tss_id": self.tss_id,
+            "tss_status": self.tss_status,
+            "admin_puk": resp.get("admin_puk"),
+        }
 
     @frappe.whitelist()
     def deploy_tss_at_provider(self):
