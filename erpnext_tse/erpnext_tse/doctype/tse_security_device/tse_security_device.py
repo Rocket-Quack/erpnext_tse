@@ -317,6 +317,23 @@ class TSESecurityDevice(Document):
             # Admin-PIN sicherstellen + Admin-Auth
             self._ensure_admin_pin_and_auth(provider)
 
+            # Vor dem Deaktivieren alle verknüpften Clients deregistrieren
+            linked_clients = frappe.get_all(
+                "TSE Client",
+                filters={"tse_security_device": self.name, "client_status": "REGISTERED"},
+                pluck="name",
+            )
+            for client_name in linked_clients:
+                client_doc = frappe.get_doc("TSE Client", client_name)
+                try:
+                    client_doc.deregister_client_at_provider()
+                except Exception as e:
+                    frappe.throw(
+                        _(
+                            "Could not deregister TSE Client {0} before disabling TSS: {1}"
+                        ).format(client_name, e)
+                    )
+
             # TSS deaktivieren (state → DISABLED)
             resp = provider.disable_tss(self.tss_id)
 
