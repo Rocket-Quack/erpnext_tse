@@ -31,6 +31,9 @@
   "sb_auth_status",
   "last_auth_status",
   "last_auth_message",
+  "recovery_tab",
+  "recovery_sb",
+  "recovery_sync_enabled",
   "entwicklung_tab",
   "sb_entwicklung",
   "enable_debug_logging"
@@ -98,16 +101,16 @@
    "options": "TEST\nLIVE"
   },
   {
+   "description": "Optional. Overrides default https://kassensichv-middleware.fiskaly.com/api/v2",
    "fieldname": "base_url",
    "fieldtype": "Data",
-   "label": "Base URL",
-   "description": "Optional. Overrides default https://kassensichv-middleware.fiskaly.com/api/v2"
+   "label": "Base URL"
   },
   {
+   "description": "Optional. Overrides default https://dsfinvk.fiskaly.com/api/v1",
    "fieldname": "dsfinvk_base_url",
    "fieldtype": "Data",
-   "label": "DSFinV-K Base URL",
-   "description": "Optional. Overrides default https://dsfinvk.fiskaly.com/api/v1"
+   "label": "DSFinV-K Base URL"
   },
   {
    "fieldname": "api_key",
@@ -173,7 +176,7 @@
   {
    "fieldname": "entwicklung_tab",
    "fieldtype": "Tab Break",
-   "label": "Development"
+   "label": "Debug"
   },
   {
    "fieldname": "sb_entwicklung",
@@ -199,12 +202,29 @@
    "label": "Cloud Provider",
    "options": "Fiskaly",
    "reqd": 1
+  },
+  {
+   "fieldname": "recovery_tab",
+   "fieldtype": "Tab Break",
+   "label": "Recovery"
+  },
+  {
+   "fieldname": "recovery_sb",
+   "fieldtype": "Section Break",
+   "label": "Recovery"
+  },
+  {
+   "default": "0",
+   "description": "When enabled, data can be synced to the ERPNext environment in emergency or recovery mode.",
+   "fieldname": "recovery_sync_enabled",
+   "fieldtype": "Check",
+   "label": "Recovery Modus"
   }
  ],
  "grid_page_length": 50,
  "issingle": 1,
  "links": [],
- "modified": "2025-12-03 22:24:51.877588",
+ "modified": "2025-12-19 18:57:31.891578",
  "modified_by": "Administrator",
  "module": "ERPNext TSE",
  "name": "TSE Settings",
