@@ -305,6 +305,8 @@ def run_recovery_sync(user: str | None = None, **kwargs):
             fields=["name", "tss_id", "tss_status"],
         )
 
+        missing_puk_devices: list[dict[str, Any]] = []
+
         for row in existing:
             if not row.tss_id:
                 continue
@@ -331,10 +333,33 @@ def run_recovery_sync(user: str | None = None, **kwargs):
 
             _update_existing_from_remote(doc, remote)
 
+            if doc.tss_status in (
+                "CREATED",
+                "UNINITIALIZED",
+                "INITIALIZED",
+                "DISABLED",
+            ) and not doc.get_password("admin_puk", raise_exception=False):
+                missing_puk_devices.append(
+                    {"name": doc.name, "tss_id": doc.tss_id, "tss_status": doc.tss_status}
+                )
+
         # Create remaining provider TSS locally
         for remote in remote_by_id.values():
             try:
-                _create_missing_from_remote(remote)
+                created_doc = _create_missing_from_remote(remote)
+                if created_doc.tss_status in (
+                    "CREATED",
+                    "UNINITIALIZED",
+                    "INITIALIZED",
+                    "DISABLED",
+                ) and not created_doc.get_password("admin_puk", raise_exception=False):
+                    missing_puk_devices.append(
+                        {
+                            "name": created_doc.name,
+                            "tss_id": created_doc.tss_id,
+                            "tss_status": created_doc.tss_status,
+                        }
+                    )
             except frappe.DuplicateEntryError:
                 # already exists; skip
                 continue
@@ -343,7 +368,10 @@ def run_recovery_sync(user: str | None = None, **kwargs):
         if user:
             publish_realtime(
                 "tse_recovery_done",
-                {"message": _("Recovery sync completed successfully.")},
+                {
+                    "message": _("Recovery sync completed successfully."),
+                    "missing_puk": missing_puk_devices,
+                },
                 user=user,
             )
     except Exception:
@@ -351,3 +379,33 @@ def run_recovery_sync(user: str | None = None, **kwargs):
         # Ensure failures appear in the background job log
         frappe.log_error(frappe.get_traceback(), "TSE Recovery Sync failed")
         raise
+
+
+@frappe.whitelist()
+def set_admin_puks(puks: list[dict[str, Any]] | None = None):
+    """Set admin PUKs for given TSE Security Devices after recovery."""
+    if puks is None:
+        puks = []
+
+    if isinstance(puks, str):
+        try:
+            puks = frappe.parse_json(puks)
+        except Exception:
+            frappe.throw(_("Invalid payload for admin PUKs."))
+
+    if not isinstance(puks, list):
+        frappe.throw(_("Invalid payload for admin PUKs."))
+
+    updated = 0
+    for entry in puks:
+        name = (entry or {}).get("name")
+        puk = (entry or {}).get("admin_puk")
+        if not name or not puk:
+            continue
+        doc = frappe.get_doc("TSE Security Device", name)
+        doc.admin_puk = puk
+        doc.save(ignore_permissions=True)
+        updated += 1
+
+    frappe.db.commit()
+    return {"updated": updated}
