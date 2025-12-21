@@ -111,6 +111,9 @@ class TSEClient(Document):
         old_status = self.client_status
 
         try:
+            # Fiskaly verlangt Administrator-Authentifizierung für Client-Operationen
+            tss._ensure_admin_pin_and_auth(provider)
+
             resp = provider.create_client(
                 tss_id=tss.tss_id,
                 metadata={

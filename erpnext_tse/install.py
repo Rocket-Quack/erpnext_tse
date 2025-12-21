@@ -43,7 +43,7 @@ def create_default_vat_rates():
                     "vat_rate_code": rate["vat_rate_code"],
                     "description": rate["description"],
                 }
-            ).insert(ignore_permissions=True)
+            ).insert(ignore_permissions=True, ignore_mandatory=True)
 
 
 def create_default_payment_types():
@@ -63,7 +63,7 @@ def create_default_payment_types():
                     "description": pt["description"],
                     "is_active": 1,
                 }
-            ).insert(ignore_permissions=True)
+            ).insert(ignore_permissions=True, ignore_mandatory=True)
 
 
 def create_custom_fields_for_erpnext():

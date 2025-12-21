@@ -30,6 +30,50 @@ frappe.ui.form.on("TSE Security Device", {
                 freeze: true,
                 freeze_message: freeze_message,
             }).then(r => {
+                const msg = r && r.message;
+                if (method_name === "create_tss_at_provider" && msg && msg.admin_puk) {
+                    const tssId = msg.tss_id || frm.doc.tss_id || __("unknown");
+                    const dialog = new frappe.ui.Dialog({
+                        title: __("TSS created"),
+                        fields: [
+                            {
+                                fieldtype: "HTML",
+                                fieldname: "info",
+                                options: `
+                                    <p>${__("Please store the following securely. They cannot be recovered later (even via recovery).")}</p>
+                                    <p><b>${__("Admin PUK")}:</b> <code>${msg.admin_puk}</code></p>
+                                    <p><b>${__("TSS ID")}:</b> <code>${tssId}</code></p>
+                                `,
+                            },
+                            {
+                                fieldtype: "Check",
+                                fieldname: "ack",
+                                label: __("I confirm I have stored Admin PUK and TSS ID externally"),
+                            },
+                        ],
+                        primary_action_label: __("Close"),
+                        primary_action: () => {
+                            if (!dialog.get_value("ack")) {
+                                frappe.msgprint({
+                                    message: __("Please confirm that you have stored Admin PUK and TSS ID."),
+                                    indicator: "red",
+                                });
+                                return;
+                            }
+                            dialog.hide();
+                        },
+                    });
+                    // disable close until checkbox ticked
+                    const primaryBtn = dialog.get_primary_btn();
+                    if (primaryBtn) primaryBtn.prop("disabled", true);
+                    const closeBtn = dialog.get_close_btn && dialog.get_close_btn();
+                    if (closeBtn) closeBtn.hide();
+                    dialog.fields_dict.ack.df.onchange = () => {
+                        const checked = dialog.get_value("ack");
+                        if (primaryBtn) primaryBtn.prop("disabled", !checked);
+                    };
+                    dialog.show();
+                }
                 if (!r.exc) {
                     frm.reload_doc();
                 }

@@ -150,7 +150,11 @@ doc_events = {
         "on_submit": [
             "erpnext_tse.erpnext_tse.pos.pos_invoice.pos_invoice_hooks.show_tse_signing_success_toast",
         ],
-    }
+    },
+    "TSE Client": {
+        "after_insert": "erpnext_tse.erpnext_tse.doctype.tse_client.hooks.set_pos_profile_on_client",
+        "on_update": "erpnext_tse.erpnext_tse.doctype.tse_client.hooks.set_pos_profile_on_client",
+    },
 }
 
 # Scheduled Tasks

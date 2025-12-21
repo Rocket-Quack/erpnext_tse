@@ -149,6 +149,7 @@ class TSESecurityDevice(Document):
         self.tss_id = resp.get("id")
         self.admin_puk = resp.get("admin_puk")
         self.tss_status = "CREATED"
+        self.tss_certificate = resp.get("certificate")
 
         self.log_provider_event(
             event_type="CREATE_TSS",
@@ -162,6 +163,13 @@ class TSESecurityDevice(Document):
         # Dokument speichern
         self.save(ignore_permissions=True)
         frappe.db.commit()
+
+        # Rückgabe für Client: Admin-PUK sofort anzeigen, da später nicht abrufbar auch im Recover Fall
+        return {
+            "tss_id": self.tss_id,
+            "tss_status": self.tss_status,
+            "admin_puk": resp.get("admin_puk"),
+        }
 
     @frappe.whitelist()
     def deploy_tss_at_provider(self):
@@ -308,6 +316,23 @@ class TSESecurityDevice(Document):
         try:
             # Admin-PIN sicherstellen + Admin-Auth
             self._ensure_admin_pin_and_auth(provider)
+
+            # Vor dem Deaktivieren alle verknüpften Clients deregistrieren
+            linked_clients = frappe.get_all(
+                "TSE Client",
+                filters={"tse_security_device": self.name, "client_status": "REGISTERED"},
+                pluck="name",
+            )
+            for client_name in linked_clients:
+                client_doc = frappe.get_doc("TSE Client", client_name)
+                try:
+                    client_doc.deregister_client_at_provider()
+                except Exception as e:
+                    frappe.throw(
+                        _(
+                            "Could not deregister TSE Client {0} before disabling TSS: {1}"
+                        ).format(client_name, e)
+                    )
 
             # TSS deaktivieren (state → DISABLED)
             resp = provider.disable_tss(self.tss_id)

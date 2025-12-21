@@ -94,7 +94,7 @@
    "fieldname": "client_status",
    "fieldtype": "Select",
    "label": "Client Status",
-   "options": "DRAFT\nDEREGISTERED\nREGISTERED\nERROR",
+   "options": "DRAFT\nDEREGISTERED\nREGISTERED\nORPHANED\nERROR",
    "read_only": 1
   },
   {
