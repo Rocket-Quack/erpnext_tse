@@ -121,3 +121,25 @@ sequenceDiagram
     ERP->>ERP: Abgleichen/aktualisieren/anlegen/orphaned setzen
     ERP-->>Admin: "Recovery sync completed successfully."
 ```
+
+# Recovery-Sync fuer TSE-Transaktionen
+Kurzbeschreibung:
+- In "TSE Settings" den Schalter "Recovery Modus" aktivieren.
+- In der Liste "TSE Transaction" den Button "Recovery Sync" starten (nur im Recovery Modus sichtbar).
+- Meldung nach Abschluss: "Recovery sync completed successfully."
+- Abgleich der Transaktionen je TSS: lokal matchen, aktualisieren/neu anlegen, fehlende auf `ORPHANED` setzen.
+- Empfehlung: erst TSE Clients recovern, damit Client-Links korrekt gesetzt werden koennen.
+
+```mermaid
+sequenceDiagram
+    participant Admin as Administrator
+    participant ERP as ERPNext TSE
+    participant Fiskaly as Fiskaly API
+
+    Admin->>ERP: "Recovery Modus" in TSE Settings aktivieren
+    Admin->>ERP: Liste "TSE Transaction" -> "Recovery Sync"
+    ERP-->>Admin: "Recovery sync queued (Job ID: ...)"
+    ERP->>Fiskaly: Transaktionen je TSS abrufen
+    ERP->>ERP: Abgleichen/aktualisieren/anlegen/orphaned setzen
+    ERP-->>Admin: "Recovery sync completed successfully."
+```

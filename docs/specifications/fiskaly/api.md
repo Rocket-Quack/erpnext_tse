@@ -268,6 +268,8 @@ Cash Point Closings:
 ## Recovery-Sync (Integration)
 - Security Devices: nutzt `GET /tss` und gleicht lokale TSS an.
 - Clients: nutzt `GET /tss/{tss_id}/client` fuer jede TSS.
+- Transactions: nutzt `GET /tss/{tss_id}/tx` je TSS, aktualisiert lokale Felder
+  und markiert fehlende Eintraege als `ORPHANED`.
 - Fehlende Provider-Eintraege werden lokal als `ORPHANED` markiert.
 - Fehlende Admin PUKs werden nach Recovery per Dialog nachgepflegt.
 - Falls der Provider einen `admin_puk` liefert und lokal keiner existiert, wird er gesetzt.
