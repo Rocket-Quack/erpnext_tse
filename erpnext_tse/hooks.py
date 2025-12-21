@@ -74,10 +74,10 @@ app_include_icons = ["erpnext_tse/icons/icon_tse_app.svg"]
 # ----------
 
 # add methods and filters to jinja environment
-# jinja = {
-# 	"methods": "erpnext_tse.utils.jinja_methods",
-# 	"filters": "erpnext_tse.utils.jinja_filters"
-# }
+jinja = {
+	"methods": "erpnext_tse.erpnext_tse.utils.jinja_methods",
+	# "filters": "erpnext_tse.utils.jinja_filters"
+}
 
 # Installation
 # ------------

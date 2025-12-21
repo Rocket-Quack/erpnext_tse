@@ -80,6 +80,19 @@ Zusätzlich werden alle Status-Änderungen zur Einsicht des Nutzers Dokumentiert
 ### Signierte POS-Belege
 #TODO
 
+### Print Format
+
+Das Print Format "POS Invoice TSE" erweitert den Standard-POS-Beleg um die rechtlich relevanten TSE-Daten. Am Belegende wird ein QR-Code angezeigt, der aus dem Feld `qr_code_data` der verknüpften TSE-Transaktion erzeugt wird und die signierten Informationen enthält. 
+Zusätzlich werden die in der TSE-Transaktion gespeicherten Daten ausgegeben:
+- `transaction_id`
+- `transaction_number`
+- `signature_counter`
+- `start_time`
+- `end_time`
+
+Dadurch sind sowohl der QR-Code als auch die zugehörigen Signatur- und Transaktionsdaten direkt auf dem Beleg.
+Rechtlich gesehen reicht auch nur der QR-Code zur Anageb der TSE Transaktion.
+
 ## Support & Inbetriebnahme
 
 ### Community-Support (kostenlos)
