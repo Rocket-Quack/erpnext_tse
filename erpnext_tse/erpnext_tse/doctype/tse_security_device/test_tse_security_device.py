@@ -1,9 +1,88 @@
 # Copyright (c) 2025, RocketQuackIT and Contributors
 # See license.txt
 
-# import frappe
+from unittest.mock import patch
+
+import frappe
 from frappe.tests.utils import FrappeTestCase
 
 
-class TestTSESecurityDevice(FrappeTestCase):
-	pass
+from erpnext_tse.erpnext_tse.doctype.tse_security_device import recovery
+
+
+class _FakeProvider:
+    def __init__(self, items):
+        self._items = items
+
+    def list_tss(self):
+        return self._items
+
+
+class TestTSESecurityDeviceRecovery(FrappeTestCase):
+    def setUp(self):
+        settings = frappe.get_single("TSE Settings")
+        settings.enabled = 1
+        settings.recovery_sync_enabled = 1
+        settings.tse_provider = "Fiskaly"
+        settings.save(ignore_permissions=True)
+
+        frappe.db.delete(
+            "TSE Security Device", {"tss_id": ["in", ["tss-1", "tss-2", "tss-missing"]]}
+        )
+        frappe.db.commit()
+
+    def _create_device(self, internal_name: str, tss_id: str, status: str):
+        doc = frappe.new_doc("TSE Security Device")
+        doc.internal_name = internal_name
+        doc.tss_id = tss_id
+        doc.tss_status = status
+        doc.flags.ignore_validate = True
+        doc.insert(ignore_permissions=True)
+        return doc
+
+    def test_recovery_sync_updates_creates_and_orphans(self):
+        existing = self._create_device("Existing", "tss-1", "UNINITIALIZED")
+        orphan = self._create_device("Orphan", "tss-missing", "INITIALIZED")
+
+        remote_items = [
+            {
+                "id": "tss-1",
+                "state": "INITIALIZED",
+                "serial_number": "SER-1",
+                "time_init": 1710000000,
+                "admin_puk": "PUK-1",
+            },
+            {
+                "id": "tss-2",
+                "state": "CREATED",
+                "serial_number": "SER-2",
+                "description": "Recovered Device",
+                "admin_puk": "PUK-2",
+            },
+        ]
+
+        provider = _FakeProvider(remote_items)
+
+        with patch(
+            "erpnext_tse.erpnext_tse.doctype.tse_security_device.recovery.get_tse_provider",
+            return_value=provider,
+        ):
+            recovery.run_recovery_sync()
+
+        updated = frappe.get_doc("TSE Security Device", existing.name)
+        self.assertEqual(updated.tss_status, "INITIALIZED")
+        self.assertEqual(updated.tss_serial_number, "SER-1")
+        self.assertIsNotNone(updated.activated_at)
+        self.assertEqual(updated.get_password("admin_puk", raise_exception=False), "PUK-1")
+
+        created_name = frappe.db.get_value(
+            "TSE Security Device", {"tss_id": "tss-2"}, "name"
+        )
+        self.assertTrue(created_name)
+        created = frappe.get_doc("TSE Security Device", created_name)
+        self.assertEqual(created.tss_status, "CREATED")
+        self.assertEqual(created.internal_name, "Recovered Device")
+        self.assertEqual(created.get_password("admin_puk", raise_exception=False), "PUK-2")
+
+        orphan_doc = frappe.get_doc("TSE Security Device", orphan.name)
+        self.assertEqual(orphan_doc.tss_status, "ORPHANED")

@@ -4,6 +4,7 @@
 import frappe
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
+
 def after_install():
     create_default_vat_rates()
     create_default_payment_types()
@@ -21,18 +22,28 @@ def create_default_vat_rates():
     default_rates = [
         {"vat_rate_code": "NORMAL", "description": "19 % / Regelsteuersatz"},
         {"vat_rate_code": "REDUCED_1", "description": "7% / Ermäßigter Steuersatz"},
-        {"vat_rate_code": "SPECIAL_RATE_1", "description": "NICHT PRODUKTIONSREIF! Spezial Steuersatz 1"},
-        {"vat_rate_code": "SPECIAL_RATE_2", "description": "NICHT PRODUKTIONSREIF! Spezial Steuersatz 2"},
+        {
+            "vat_rate_code": "SPECIAL_RATE_1",
+            "description": "NICHT PRODUKTIONSREIF! Spezial Steuersatz 1",
+        },
+        {
+            "vat_rate_code": "SPECIAL_RATE_2",
+            "description": "NICHT PRODUKTIONSREIF! Spezial Steuersatz 2",
+        },
         {"vat_rate_code": "NULL", "description": "0 % / steuerfrei"},
     ]
 
     for rate in default_rates:
-        if not frappe.db.exists("TSE VAT Rate", {"vat_rate_code": rate["vat_rate_code"]}):
-            frappe.get_doc({
-                "doctype": "TSE VAT Rate",
-                "vat_rate_code": rate["vat_rate_code"],
-                "description": rate["description"],
-            }).insert(ignore_permissions=True)
+        if not frappe.db.exists(
+            "TSE VAT Rate", {"vat_rate_code": rate["vat_rate_code"]}
+        ):
+            frappe.get_doc(
+                {
+                    "doctype": "TSE VAT Rate",
+                    "vat_rate_code": rate["vat_rate_code"],
+                    "description": rate["description"],
+                }
+            ).insert(ignore_permissions=True, ignore_mandatory=True)
 
 
 def create_default_payment_types():
@@ -42,13 +53,17 @@ def create_default_payment_types():
     ]
 
     for pt in default_payment_types:
-        if not frappe.db.exists("TSE Payment Type", {"payment_code": pt["payment_code"]}):
-            frappe.get_doc({
-                "doctype": "TSE Payment Type",
-                "payment_code": pt["payment_code"],
-                "description": pt["description"],
-                "is_active": 1,
-            }).insert(ignore_permissions=True)
+        if not frappe.db.exists(
+            "TSE Payment Type", {"payment_code": pt["payment_code"]}
+        ):
+            frappe.get_doc(
+                {
+                    "doctype": "TSE Payment Type",
+                    "payment_code": pt["payment_code"],
+                    "description": pt["description"],
+                    "is_active": 1,
+                }
+            ).insert(ignore_permissions=True, ignore_mandatory=True)
 
 
 def create_custom_fields_for_erpnext():
