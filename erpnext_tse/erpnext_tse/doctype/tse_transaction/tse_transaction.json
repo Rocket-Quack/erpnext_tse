@@ -204,7 +204,7 @@
    "fieldname": "transaction_status",
    "fieldtype": "Select",
    "label": "Transaction Status",
-   "options": "ACTIVE\nCANCELLED\nFINISHED"
+   "options": "ACTIVE\nCANCELLED\nFINISHED\nORPHANED\nERROR"
   }
  ],
  "grid_page_length": 50,
