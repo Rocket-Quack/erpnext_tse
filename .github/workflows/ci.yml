@@ -80,8 +80,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-yarn-
 
+      - name: Update Package Repository
+        run: sudo apt update
+
       - name: Install MariaDB Client
-        run: sudo apt-get install mariadb-client-10.6
+        run: sudo apt-get install mariadb-client
 
       - name: Setup
         run: |
