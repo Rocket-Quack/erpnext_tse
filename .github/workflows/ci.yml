@@ -105,6 +105,11 @@ jobs:
           bench build
         env:
           CI: 'Yes'
+          
+      - name: Migrate 
+        working-directory: /home/runner/frappe-bench
+        run: |
+          bench --site test_site migrate
 
       - name: Run Tests
         working-directory: /home/runner/frappe-bench
