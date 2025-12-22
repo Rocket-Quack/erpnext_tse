@@ -41,7 +41,7 @@ Provider wieder konsistent werden.
 ```mermaid
 flowchart TD
     A[Start Recovery Sync] --> B[Check TSE Settings<br/>enabled + recovery]
-    B --> C[Load lokale TSS (nicht ORPHANED)]
+    B --> C[Load lokale TSS außer ORPHANED]
     C --> D[Call Fiskaly /client je TSS]
     D --> E{Client lokal gematcht?}
     E -->|Ja| F[Update Felder/Status<br/>Event: UPDATE_STATUS_RECOVERY]
