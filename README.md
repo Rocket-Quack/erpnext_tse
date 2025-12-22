@@ -54,7 +54,43 @@ Detaillierte Anleitungen finden Sie hier:
 Diese Kurzübersciht zeigt, wie Sie die TSE-APP in ERPNext nutzen.
 
 ### Allgemeine Konfiguration
-#TODO
+Bevor TSE-Security-Devices angelegt werden, muessen die globalen Einstellungen
+und die fachlichen Mappings gesetzt werden. Ohne diese Basis ist keine
+signierte POS-Transaktion moeglich.
+
+#### **TSE Settings konfigurieren**
+
+<p>
+  <img src="docs/assets/TSE-Settings/TSE_SETTINGS_PAGE.png" alt="Übersichts Seite der Einstellungen für TSE API Key und Secret"/>
+</p>
+
+- In ERPNext das DocType `TSE Settings` oeffnen (Workspace: ERPNext TSE).
+- `TSE Provider` auf **Fiskaly** setzen.
+- `Environment` waehlen: **TEST** fuer erste Tests, **LIVE** fuer Produktion.
+- `API Key` und `API Secret` aus dem fiskaly Dashboard eintragen.
+- `Base URL` und `DSFinV-K Base URL` nur anpassen, falls bewusst abweichend.
+- `Activated` aktivieren, speichern und danach ueber **Test Auth** die Verbindung pruefen.
+- Pruefen, ob `Organization ID`, Token-Status und Environment gesetzt werden.
+
+#### **Steuer- und Zahlungsarten mappen**
+
+<p>
+  <img src="docs/assets/TSE-Settings/TSE_PAYMENT_TYPES.png" alt="Verknüpfungen der hinterlegten Steuer Accounts"/>
+</p>
+
+- `TSE Payment Type`: `CASH` und `NON_CASH` den ERPNext-Zahlungsarten
+  (Mode of Payment) zuordnen.
+
+<p>
+  <img src="docs/assets/TSE-Settings/TSE_VAT_RATES.png" alt="Verknüpfungen der hinterlegten Steuer Accounts"/>
+</p>
+
+- `TSE VAT Rate`: vorhandene VAT-Codes mit den passenden Steuerkonten verknuepfen
+  (Account Type = Tax). Aktuell werden 19% und 7% verarbeitet.
+
+Wenn diese Schritte abgeschlossen sind, kann die eigentliche TSE-Konfiguration
+(Security Device, Clients, POS-Profile) gestartet werden.
+Details: [Erstkonfiguration TSE in ERPNext](/docs/guides/de/configuration.md)
 
 ### TSE Konfigurationen
 
@@ -75,20 +111,41 @@ Zusätzlich werden alle Status-Änderungen zur Einsicht des Nutzers Dokumentiert
 </p>
 
 ### POS-Profile Einstellungen
-#TODO
+Jedes POS-Profile muss genau einem TSE Client zugeordnet sein (1:1).
+Der TSE Client wird wiederum einem TSE Security Device zugewiesen.
+
+**Vorgehen**
+- Im DocType `TSE Client` einen neuen Client anlegen und ein `TSE Security Device`
+  auswaehlen.
+- Im selben Dokument das gewuenschte `POS Profile` setzen.
+- Das Feld `TSE Client` im POS Profile wird dabei automatisch gepflegt. Pruefe,
+  dass der Link gesetzt ist.
+
+Details: [Erstkonfiguration TSE in ERPNext](/docs/guides/de/configuration.md)
 
 ### Signierte POS-Belege
-#TODO
+Nach dem Absenden einer POS Invoice startet die App automatisch die
+TSE-Transaktion und beendet sie mit den Transaktionsdaten.
+
+**Woran erkenne ich eine erfolgreiche Signatur**
+- In der POS Invoice ist das Feld `TSE Transaction` gefuellt.
+- Im verknuepften Dokument sind Status, Signaturdaten und `qr_code_data` sichtbar.
+- Beim Druck das Print Format **POS Invoice TSE** verwenden (siehe unten).
+
+Details: [Nutzung der TSE in Produktion](/docs/guides/de/usage.md)
 
 ### Print Format
 
 Das Print Format "POS Invoice TSE" erweitert den Standard-POS-Beleg um die rechtlich relevanten TSE-Daten. Am Belegende wird ein QR-Code angezeigt, der aus dem Feld `qr_code_data` der verknüpften TSE-Transaktion erzeugt wird und die signierten Informationen enthält. 
 Zusätzlich werden die in der TSE-Transaktion gespeicherten Daten ausgegeben:
-- `transaction_id`
 - `transaction_number`
 - `signature_counter`
 - `start_time`
 - `end_time`
+
+<p>
+  <img src="docs/assets/TSE-Transaction/PRINT_FORMAT_QR_CODE.png" alt="Print Format mit QR-Code und Signatur Daten"/>
+</p>
 
 Dadurch sind sowohl der QR-Code als auch die zugehörigen Signatur- und Transaktionsdaten direkt auf dem Beleg.
 Rechtlich gesehen reicht auch nur der QR-Code zur Anageb der TSE Transaktion.

@@ -6,6 +6,7 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 
 def after_install():
+    create_tse_roles()
     create_default_vat_rates()
     create_default_payment_types()
     create_custom_fields_for_erpnext()
@@ -13,9 +14,26 @@ def after_install():
 
 def after_migrate():
     # Defaults werden bei Bedarf bei Migrate wieder ausgeführt
+    create_tse_roles()
     create_default_vat_rates()
     create_default_payment_types()
     create_custom_fields_for_erpnext()
+
+
+def create_tse_roles():
+    ensure_role("TSE Admin")
+
+
+def ensure_role(role_name):
+    if not frappe.db.exists("Role", role_name):
+        frappe.get_doc(
+            {
+                "doctype": "Role",
+                "role_name": role_name,
+                "desk_access": 1,
+                "is_custom": 1,
+            }
+        ).insert(ignore_permissions=True)
 
 
 def create_default_vat_rates():

@@ -2,6 +2,9 @@
  "allow_roles": [
   {
    "role": "System Manager"
+  },
+  {
+   "role": "TSE Admin"
   }
  ],
  "creation": "2025-12-09 16:04:32.054367",
