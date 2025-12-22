@@ -4,8 +4,12 @@ name: CI
 on:
   push:
     branches:
-      - develop
+      - version-15
+      - version-15-develop
   pull_request:
+    branches:
+      - version-15
+      - version-15-develop
 
 concurrency:
   group: develop-erpnext_tse-${{ github.event.number }}
