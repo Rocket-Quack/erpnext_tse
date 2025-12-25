@@ -10,6 +10,7 @@ from typing import Any
 
 import frappe
 import requests
+from frappe import _
 from frappe.utils import get_datetime, now_datetime
 
 from .base import BaseTSEProvider
@@ -56,7 +57,7 @@ class FiskalyProvider(BaseTSEProvider):
 		api_secret = self.doc.get_password("api_secret")
 
 		if not api_key or not api_secret:
-			frappe.throw("Please enter API Key and API Secret in TSE Settings.")
+			frappe.throw(_("Please enter API Key and API Secret in TSE Settings."))
 
 		return api_key, api_secret
 
@@ -103,7 +104,7 @@ class FiskalyProvider(BaseTSEProvider):
 
 		token = self.get_access_token()
 		if not token:
-			frappe.throw("Could not obtain a valid access token from Fiskaly.")
+			frappe.throw(_("Could not obtain a valid access token from Fiskaly."))
 		return token
 
 	# --- error handling helpers -----------------------------------------
@@ -187,7 +188,7 @@ class FiskalyProvider(BaseTSEProvider):
 				error_code="E_NETWORK_ERROR",
 				message=str(exc),
 			)
-			frappe.throw(f"Could not reach Fiskaly auth endpoint: {exc}")
+			frappe.throw(_("Could not reach Fiskaly auth endpoint: {0}").format(exc))
 
 		try:
 			body_preview = response.text[:500]
@@ -212,8 +213,9 @@ class FiskalyProvider(BaseTSEProvider):
 				message=err.get("message") or err.get("error") or "Unauthorized",
 			)
 			frappe.throw(
-				f"Authentication failed (401). "
-				f"Error code: {err.get('code') or 'N/A'}, message: {err.get('message') or err.get('error')}"
+				_("Authentication failed (401). Error code: {0}, message: {1}").format(
+					err.get("code") or "N/A", err.get("message") or err.get("error")
+				)
 			)
 
 		if 400 <= response.status_code < 500:
@@ -225,8 +227,11 @@ class FiskalyProvider(BaseTSEProvider):
 				message=err.get("message") or err.get("error") or "Client error",
 			)
 			frappe.throw(
-				f"Fiskaly returned a client error ({response.status_code}). "
-				f"Error code: {err.get('code') or 'N/A'}, message: {err.get('message') or err.get('error')}"
+				_("Fiskaly returned a client error ({0}). Error code: {1}, message: {2}").format(
+					response.status_code,
+					err.get("code") or "N/A",
+					err.get("message") or err.get("error"),
+				)
 			)
 
 		if 500 <= response.status_code < 600:
@@ -237,9 +242,10 @@ class FiskalyProvider(BaseTSEProvider):
 				message=err.get("message") or err.get("error") or "Server error",
 			)
 			frappe.throw(
-				f"Fiskaly server error ({response.status_code}). "
-				f"Please try again later or check status.fiskaly.com. "
-				f"Details: {err.get('message') or err.get('error')}"
+				_(
+					"Fiskaly server error ({0}). Please try again later or check status.fiskaly.com. "
+					"Details: {1}"
+				).format(response.status_code, err.get("message") or err.get("error"))
 			)
 
 		try:
@@ -255,7 +261,7 @@ class FiskalyProvider(BaseTSEProvider):
 				error_code="E_INVALID_JSON",
 				message=f"Could not parse JSON response: {exc}",
 			)
-			frappe.throw(f"Could not parse Fiskaly auth response as JSON: {exc}")
+			frappe.throw(_("Could not parse Fiskaly auth response as JSON: {0}").format(exc))
 
 		return data
 
@@ -284,7 +290,9 @@ class FiskalyProvider(BaseTSEProvider):
 				error_code=err_code,
 				message=msg,
 			)
-			frappe.throw(f"Authentication failed. " f"Error code: {err_code or 'N/A'}, message: {msg}")
+			frappe.throw(
+				_("Authentication failed. Error code: {0}, message: {1}").format(err_code or "N/A", msg)
+			)
 
 		claims = data.get("access_token_claims") or {}
 
@@ -440,8 +448,9 @@ class FiskalyProvider(BaseTSEProvider):
 		except ValueError:
 			err = self._parse_error_response(resp)
 			frappe.throw(
-				f"Fiskaly returned a non-JSON response ({status}). "
-				f"Error: {err.get('message') or err.get('error')}"
+				_("Fiskaly returned a non-JSON response ({0}). Error: {1}").format(
+					status, err.get("message") or err.get("error")
+				)
 			)
 
 		if "status_code" not in data:
@@ -452,9 +461,11 @@ class FiskalyProvider(BaseTSEProvider):
 
 		err = self._parse_error_response(resp)
 		frappe.throw(
-			f"Fiskaly returned an error ({status}). "
-			f"Code: {err.get('code') or 'N/A'}, "
-			f"Message: {err.get('message') or err.get('error') or 'Unknown error'}"
+			_("Fiskaly returned an error ({0}). Code: {1}, Message: {2}").format(
+				status,
+				err.get("code") or "N/A",
+				err.get("message") or err.get("error") or "Unknown error",
+			)
 		)
 
 	def _dsfinvk_request_json(self, method: str, path: str, **kwargs) -> dict[str, Any]:
@@ -467,8 +478,9 @@ class FiskalyProvider(BaseTSEProvider):
 		except ValueError:
 			err = self._parse_error_response(resp)
 			frappe.throw(
-				f"Fiskaly DSFinV-K returned a non-JSON response ({status}). "
-				f"Error: {err.get('message') or err.get('error')}"
+				_("Fiskaly DSFinV-K returned a non-JSON response ({0}). Error: {1}").format(
+					status, err.get("message") or err.get("error")
+				)
 			)
 
 		if "status_code" not in data:
@@ -479,9 +491,11 @@ class FiskalyProvider(BaseTSEProvider):
 
 		err = self._parse_error_response(resp)
 		frappe.throw(
-			f"Fiskaly DSFinV-K returned an error ({status}). "
-			f"Code: {err.get('code') or 'N/A'}, "
-			f"Message: {err.get('message') or err.get('error') or 'Unknown error'}"
+			_("Fiskaly DSFinV-K returned an error ({0}). Code: {1}, Message: {2}").format(
+				status,
+				err.get("code") or "N/A",
+				err.get("message") or err.get("error") or "Unknown error",
+			)
 		)
 
 	# ---------------------------------------------------------------------
@@ -774,7 +788,7 @@ class FiskalyProvider(BaseTSEProvider):
 		elif by_business_date:
 			payload.update(by_business_date)
 		else:
-			frappe.throw("Export requires either by_creation_date or by_business_date payload.")
+			frappe.throw(_("Export requires either by_creation_date or by_business_date payload."))
 
 		if client_id:
 			payload["client_id"] = client_id

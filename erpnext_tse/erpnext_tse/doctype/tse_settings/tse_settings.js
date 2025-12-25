@@ -61,12 +61,14 @@ frappe.ui.form.on("TSE Settings", {
 						frappe.msgprint({
 							title: __("TSE Auth Result"),
 							message: `
-                                <p><b>Status:</b> ${data.status || "-"}</p>
-                                <p><b>Environment:</b> ${data.environment || "-"}</p>
-                                <p><b>Organization ID:</b> ${data.organization_id || "-"}</p>
-                                <p><b>Access Token Expires At:</b> ${
-									data.access_token_expires_at || "-"
-								}</p>
+                                <p><b>${__("Status")}:</b> ${data.status || "-"}</p>
+                                <p><b>${__("Environment")}:</b> ${data.environment || "-"}</p>
+                                <p><b>${__("Organization ID")}:</b> ${
+								data.organization_id || "-"
+							}</p>
+                                <p><b>${__("Access Token Expires At")}:</b> ${
+								data.access_token_expires_at || "-"
+							}</p>
                             `,
 							indicator: "green",
 						});
@@ -90,18 +92,14 @@ frappe.ui.form.on("TSE Settings", {
 
 		if (frm.doc.enabled) {
 			frappe.msgprint({
-				title: __("TSE aktiviert"),
-				message: __(
-					"Die TSE-Integration wurde aktiviert. Zum Übernehmen bitte speichern."
-				),
+				title: __("TSE Enabled"),
+				message: __("TSE integration has been enabled. Please save to apply changes."),
 				indicator: "green",
 			});
 		} else {
 			frappe.msgprint({
-				title: __("TSE deaktiviert"),
-				message: __(
-					"Die TSE-Integration wurde deaktiviert. Zum Übernehmen bitte speichern."
-				),
+				title: __("TSE Disabled"),
+				message: __("TSE integration has been disabled. Please save to apply changes."),
 				indicator: "orange",
 			});
 		}
