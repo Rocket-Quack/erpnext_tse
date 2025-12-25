@@ -2,17 +2,16 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("TSE VAT Rate", {
-  setup(frm) {
-    frm.set_query("account", () => {
-      return {
-        filters: {
-          account_type: "Tax",
-          is_group: 0,
-          disabled: 0,
-          company: frm.doc.company
-        }
-      };
-    });
-  }
+	setup(frm) {
+		frm.set_query("account", () => {
+			return {
+				filters: {
+					account_type: "Tax",
+					is_group: 0,
+					disabled: 0,
+					company: frm.doc.company,
+				},
+			};
+		});
+	},
 });
-
