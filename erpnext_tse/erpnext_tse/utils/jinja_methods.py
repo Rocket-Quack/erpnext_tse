@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any
 
 import frappe
+from frappe import _
 
 
 def get_tse_qr_code(data: Any) -> str:
@@ -16,7 +17,7 @@ def get_tse_qr_code(data: Any) -> str:
 	try:
 		from frappe.twofactor import get_qr_svg_code
 	except Exception:
-		frappe.log_error("QR code helper unavailable", "TSE Print Format")
+		frappe.log_error(_("QR code helper unavailable"), _("TSE Print Format"))
 		return ""
 
 	svg_b64 = get_qr_svg_code(str(data))

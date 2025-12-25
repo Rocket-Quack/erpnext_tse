@@ -367,7 +367,7 @@ def run_recovery_sync(user: str | None = None, **kwargs):
 	except Exception:
 		frappe.db.rollback()
 		# Ensure failures appear in the background job log
-		frappe.log_error(frappe.get_traceback(), "TSE Recovery Sync failed")
+		frappe.log_error(frappe.get_traceback(), _("TSE Recovery Sync failed"))
 		raise
 
 

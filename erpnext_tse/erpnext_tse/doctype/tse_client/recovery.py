@@ -429,5 +429,5 @@ def run_recovery_sync(user: str | None = None, **kwargs):
 			)
 	except Exception:
 		frappe.db.rollback()
-		frappe.log_error(frappe.get_traceback(), "TSE Client Recovery Sync failed")
+		frappe.log_error(frappe.get_traceback(), _("TSE Client Recovery Sync failed"))
 		raise

@@ -42,10 +42,10 @@ class TSESecurityDevice(Document):
 		"""Sorgt dafür, dass ein Admin-PIN existiert und führt authenticate_admin aus."""
 
 		if not self.tss_id:
-			frappe.throw("Es ist noch keine TSS-ID hinterlegt.")
+			frappe.throw(_("No TSS ID is set yet."))
 
 		if not self.get_password("admin_puk"):
-			frappe.throw("Kein Admin-PUK gespeichert. Bitte TSS neu anlegen oder PUK nachtragen.")
+			frappe.throw(_("No Admin PUK stored. Please re-create the TSS or add the PUK."))
 
 		# 1) Falls noch kein admin_pin gesetzt ist → zufällig generieren + bei Fiskaly setzen
 		current_pin = self.get_password("admin_pin", raise_exception=False)

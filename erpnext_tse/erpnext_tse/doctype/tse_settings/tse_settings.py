@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 from erpnext_tse.erpnext_tse.tss_providers.base import BaseTSEProvider
@@ -19,7 +20,7 @@ class TSESettings(Document):
 		"""Return the normalized provider name from settings."""
 		name = (self.tse_provider or "").strip().lower()
 		if not name:
-			frappe.throw("No TSE provider configured. Please select a TSE Provider in TSE Settings.")
+			frappe.throw(_("No TSE provider configured. Please select a TSE Provider in TSE Settings."))
 		return name
 
 	def get_provider(self) -> BaseTSEProvider:
@@ -30,12 +31,12 @@ class TSESettings(Document):
 			return FiskalyProvider(self)
 
 		# Placeholder for future providers
-		frappe.throw(f"Unsupported TSE provider: {self.tse_provider or name}")
+		frappe.throw(_("Unsupported TSE provider: {0}").format(self.tse_provider or name))
 
 	def validate(self):
 		"""Basic validation for TSE Settings."""
 		if self.enabled and not self.tse_provider:
-			frappe.throw("You must choose a TSE Provider before enabling the TSE integration.")
+			frappe.throw(_("You must choose a TSE Provider before enabling the TSE integration."))
 
 
 # -------------------------------------------------------------------------
@@ -49,7 +50,7 @@ def test_tse_auth() -> dict[str, Any]:
 
 	# TSE muss aktiviert sein
 	if not getattr(settings, "enabled", None):
-		frappe.throw("TSE integration is disabled. Please enable it in TSE Settings before testing auth.")
+		frappe.throw(_("TSE integration is disabled. Please enable it in TSE Settings before testing auth."))
 
 	provider = settings.get_provider()
 

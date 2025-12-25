@@ -10,7 +10,7 @@ def ensure_tse_transaction_present_and_finished(doc, method):
 	# Ohne sollte um auch rechtlich sicher zu sein keine Buchung erfolgen
 	if not doc.tse_transaction:
 		frappe.throw(
-			_("A TSE transaction is mandatory, bevor POS Invoice can be submitted."),
+			_("A TSE transaction is mandatory before a POS Invoice can be submitted."),
 			frappe.MandatoryError,
 		)
 
@@ -34,8 +34,8 @@ def show_tse_signing_success_toast(doc, method=None):
 	# Keine verknüpfte TSE Transaction
 	if not getattr(doc, "tse_transaction", None):
 		frappe.throw(
-			_("POS Invoice wurde ohne verknüpfte TSE-Transaktion submitted."),
-			title=_("TSE Fehler"),
+			_("POS Invoice was submitted without a linked TSE transaction."),
+			title=_("TSE Error"),
 		)
 
 	# TSE Transaction laden
@@ -45,7 +45,7 @@ def show_tse_signing_success_toast(doc, method=None):
 	# Erfolgsfall TSE Transaktion hat Status FINISHED
 	if status == "FINISHED":
 		frappe.msgprint(
-			_("<b>TSE-Signierung erfolgreich abgeschlossen</b><br>TSE-Transaktion: {0}").format(tse_doc.name),
+			_("<b>TSE signing completed successfully</b><br>TSE transaction: {0}").format(tse_doc.name),
 			alert=True,
 			indicator="green",
 		)
@@ -53,8 +53,8 @@ def show_tse_signing_success_toast(doc, method=None):
 
 	# Fehlerfall Doc wird nicht Submitted
 	frappe.throw(
-		_(
-			"TSE-Signierung nicht erfolgreich.<br>" "<b>Status:</b> {0}<br>" "<b>TSE-Transaktion:</b> {1}"
-		).format(status or _("Unbekannt"), tse_doc.name),
-		title=_("TSE Signierung fehlgeschlagen"),
+		_("TSE signing failed.<br>" "<b>Status:</b> {0}<br>" "<b>TSE transaction:</b> {1}").format(
+			status or _("Unknown"), tse_doc.name
+		),
+		title=_("TSE signing failed"),
 	)
