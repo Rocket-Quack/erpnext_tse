@@ -1,0 +1,236 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "DSFINV-CR-.#####.",
+  "creation": "2025-12-26 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "details_tab",
+    "sb_register_info",
+    "tse_client",
+    "pos_profile",
+    "column_break_main",
+    "company",
+    "status",
+    "sb_provider_ids",
+    "cash_register_id",
+    "tss_id",
+    "column_break_ids",
+    "cash_register_type",
+    "revision",
+    "sb_masterdata",
+    "brand",
+    "model",
+    "column_break_md",
+    "base_currency_code",
+    "software_brand",
+    "software_version",
+    "sb_provider_meta",
+    "time_creation",
+    "time_update",
+    "metadata_json",
+    "provider_events_tab",
+    "provider_events"
+  ],
+  "fields": [
+    {
+      "fieldname": "details_tab",
+      "fieldtype": "Tab Break",
+      "label": "Details"
+    },
+    {
+      "fieldname": "sb_register_info",
+      "fieldtype": "Section Break",
+      "label": "Register Info"
+    },
+    {
+      "fieldname": "tse_client",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "TSE Client",
+      "options": "TSE Client",
+      "read_only": 1,
+      "reqd": 1,
+      "unique": 1
+    },
+    {
+      "fieldname": "pos_profile",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "POS Profile",
+      "options": "POS Profile",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_main",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "company",
+      "fieldtype": "Link",
+      "label": "Company",
+      "options": "Company",
+      "read_only": 1
+    },
+    {
+      "default": "DRAFT",
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Status",
+      "options": "DRAFT\nACTIVE\nERROR\nORPHANED",
+      "read_only": 1
+    },
+    {
+      "fieldname": "sb_provider_ids",
+      "fieldtype": "Section Break",
+      "label": "Provider IDs"
+    },
+    {
+      "fieldname": "cash_register_id",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Cash Register ID",
+      "read_only": 1
+    },
+    {
+      "fieldname": "tss_id",
+      "fieldtype": "Data",
+      "label": "TSS ID",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_ids",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "cash_register_type",
+      "fieldtype": "Select",
+      "label": "Cash Register Type",
+      "options": "MASTER\nSLAVE_WITHOUT_TSS\nSLAVE_WITH_TSS",
+      "read_only": 1
+    },
+    {
+      "fieldname": "revision",
+      "fieldtype": "Int",
+      "label": "Revision",
+      "read_only": 1
+    },
+    {
+      "fieldname": "sb_masterdata",
+      "fieldtype": "Section Break",
+      "label": "Master Data"
+    },
+    {
+      "fieldname": "brand",
+      "fieldtype": "Data",
+      "label": "Brand",
+      "read_only": 1
+    },
+    {
+      "fieldname": "model",
+      "fieldtype": "Data",
+      "label": "Model",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_md",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "base_currency_code",
+      "fieldtype": "Data",
+      "label": "Base Currency",
+      "read_only": 1
+    },
+    {
+      "fieldname": "software_brand",
+      "fieldtype": "Data",
+      "label": "Software Brand",
+      "read_only": 1
+    },
+    {
+      "fieldname": "software_version",
+      "fieldtype": "Data",
+      "label": "Software Version",
+      "read_only": 1
+    },
+    {
+      "fieldname": "sb_provider_meta",
+      "fieldtype": "Section Break",
+      "label": "Provider Metadata"
+    },
+    {
+      "fieldname": "time_creation",
+      "fieldtype": "Datetime",
+      "label": "Time Creation",
+      "read_only": 1
+    },
+    {
+      "fieldname": "time_update",
+      "fieldtype": "Datetime",
+      "label": "Time Update",
+      "read_only": 1
+    },
+    {
+      "fieldname": "metadata_json",
+      "fieldtype": "Code",
+      "label": "Metadata JSON",
+      "options": "JSON",
+      "read_only": 1
+    },
+    {
+      "fieldname": "provider_events_tab",
+      "fieldtype": "Tab Break",
+      "label": "Events"
+    },
+    {
+      "fieldname": "provider_events",
+      "fieldtype": "Table",
+      "label": "Provider Events",
+      "options": "DSFinV-K Cash Register Provider Event"
+    }
+  ],
+  "grid_page_length": 50,
+  "links": [],
+  "modified": "2025-12-26 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "ERPNext TSE",
+  "name": "DSFinV-K Cash Register",
+  "naming_rule": "Expression",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    },
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "TSE Admin",
+      "share": 1,
+      "write": 1
+    }
+  ],
+  "row_format": "Dynamic",
+  "rows_threshold_for_grid_search": 20,
+  "show_title_field_in_link": 1,
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "title_field": "tse_client"
+}
