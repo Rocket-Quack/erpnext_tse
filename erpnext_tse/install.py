@@ -86,18 +86,24 @@ def create_default_payment_types():
 
 def create_default_dsfinvk_vat_rates():
 	default_definitions = [
-		{"vat_definition_export_id": 1, "description": "Standard tax rate"},
-		{"vat_definition_export_id": 2, "description": "Reduced tax rate"},
-		{"vat_definition_export_id": 5, "description": "Non-taxable"},
-		{"vat_definition_export_id": 6, "description": "Exempt from VAT"},
-		{"vat_definition_export_id": 7, "description": "Non-taxable for turnover tax"},
+		{"vat_definition_export_id": 1, "description": "1 / Regelsteuersatz"},
+		{"vat_definition_export_id": 2, "description": "2 / Ermaessigter Steuersatz"},
+		{"vat_definition_export_id": 3, "description": "3 / Durchschnittssatz (§ 24 Abs. 1 Nr. 3 UStG)"},
+		{"vat_definition_export_id": 4, "description": "4 / Durchschnittssatz (§ 24 Abs. 1 Nr. 1 UStG)"},
+		{"vat_definition_export_id": 5, "description": "5 / Nicht steuerbar"},
+		{"vat_definition_export_id": 6, "description": "6 / Steuerfrei"},
+		{"vat_definition_export_id": 7, "description": "7 / Nicht steuerbar fuer Umsatzsteuer"},
 	]
 
 	for definition in default_definitions:
-		if not frappe.db.exists(
+		existing = frappe.db.get_value(
 			"DSFinV-K VAT Rate",
 			{"vat_definition_export_id": definition["vat_definition_export_id"]},
-		):
+			["name", "description"],
+			as_dict=True,
+		)
+
+		if not existing:
 			frappe.get_doc(
 				{
 					"doctype": "DSFinV-K VAT Rate",
@@ -105,6 +111,19 @@ def create_default_dsfinvk_vat_rates():
 					"description": definition["description"],
 				}
 			).insert(ignore_permissions=True, ignore_mandatory=True)
+		elif not existing.description or existing.description in {
+			"Standard tax rate",
+			"Reduced tax rate",
+			"Non-taxable",
+			"Exempt from VAT",
+			"Non-taxable for turnover tax",
+		}:
+			frappe.db.set_value(
+				"DSFinV-K VAT Rate",
+				existing.name,
+				"description",
+				definition["description"],
+			)
 
 
 def create_default_dsfinvk_payment_types():

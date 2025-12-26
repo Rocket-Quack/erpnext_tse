@@ -12,6 +12,12 @@ required_apps = ["erpnext"]
 
 fixtures = [
 	{
+		"doctype": "Workspace",
+		"filters": [
+			["name", "in", ["TSE"]],
+		],
+	},
+	{
 		"doctype": "Number Card",
 		"filters": [
 			["name", "in", ["TSE Clients", "TSE Security Device", "TSE Transactions"]],
