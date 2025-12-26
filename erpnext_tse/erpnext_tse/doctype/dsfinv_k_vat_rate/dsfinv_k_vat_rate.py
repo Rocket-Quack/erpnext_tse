@@ -6,7 +6,7 @@ from frappe import _
 from frappe.model.document import Document
 
 
-class DSFinVKVATDefinition(Document):
+class DSFinVKVATRate(Document):
 	def validate(self):
 		if not self.company or not self.account:
 			return

@@ -1,7 +1,7 @@
 // Copyright (c) 2025, RocketQuackIT and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on("DSFinV-K VAT Definition", {
+frappe.ui.form.on("DSFinV-K VAT Rate", {
 	setup(frm) {
 		frm.set_query("account", () => {
 			return {

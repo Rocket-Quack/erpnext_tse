@@ -9,7 +9,7 @@ def after_install():
 	create_tse_roles()
 	create_default_vat_rates()
 	create_default_payment_types()
-	create_default_dsfinvk_vat_definitions()
+	create_default_dsfinvk_vat_rates()
 	create_default_dsfinvk_payment_types()
 	create_custom_fields_for_erpnext()
 
@@ -19,7 +19,7 @@ def after_migrate():
 	create_tse_roles()
 	create_default_vat_rates()
 	create_default_payment_types()
-	create_default_dsfinvk_vat_definitions()
+	create_default_dsfinvk_vat_rates()
 	create_default_dsfinvk_payment_types()
 	create_custom_fields_for_erpnext()
 
@@ -84,7 +84,7 @@ def create_default_payment_types():
 			).insert(ignore_permissions=True, ignore_mandatory=True)
 
 
-def create_default_dsfinvk_vat_definitions():
+def create_default_dsfinvk_vat_rates():
 	default_definitions = [
 		{"vat_definition_export_id": 1, "description": "Standard tax rate"},
 		{"vat_definition_export_id": 2, "description": "Reduced tax rate"},
@@ -95,12 +95,12 @@ def create_default_dsfinvk_vat_definitions():
 
 	for definition in default_definitions:
 		if not frappe.db.exists(
-			"DSFinV-K VAT Definition",
+			"DSFinV-K VAT Rate",
 			{"vat_definition_export_id": definition["vat_definition_export_id"]},
 		):
 			frappe.get_doc(
 				{
-					"doctype": "DSFinV-K VAT Definition",
+					"doctype": "DSFinV-K VAT Rate",
 					"vat_definition_export_id": definition["vat_definition_export_id"],
 					"description": definition["description"],
 				}

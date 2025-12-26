@@ -385,11 +385,11 @@ def _build_amounts_per_vat_definition(pos_inv) -> list[dict[str, Any]]:
 		vat_id = vat_id_by_tax_account.get(tax_account)
 		if not vat_id:
 			vat_id = frappe.db.get_value(
-				"DSFinV-K VAT Definition", {"account": tax_account}, "vat_definition_export_id"
+				"DSFinV-K VAT Rate", {"account": tax_account}, "vat_definition_export_id"
 			)
 			if not vat_id:
 				frappe.throw(
-					_("No DSFinV-K VAT Definition mapping found for Tax Account '{0}'.").format(tax_account)
+					_("No DSFinV-K VAT Rate mapping found for Tax Account '{0}'.").format(tax_account)
 				)
 			vat_id_by_tax_account[tax_account] = int(vat_id)
 
