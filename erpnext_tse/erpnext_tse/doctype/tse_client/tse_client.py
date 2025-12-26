@@ -4,10 +4,10 @@
 from datetime import datetime
 
 import frappe
+from erpnext import __version__ as erpnext_version
 from frappe import _
 from frappe.model.document import Document
 
-from erpnext_tse import __version__ as app_version
 from erpnext_tse.erpnext_tse.tss_providers import get_tse_provider
 
 
@@ -286,7 +286,7 @@ def _build_dsfinvk_cash_register_payload(client, tss):
 	model = client.pos_profile or client.client_name or client.name
 	software = {
 		"brand": "ERPNext",
-		"version": app_version,
+		"version": erpnext_version,
 	}
 	base_currency = (
 		frappe.db.get_value("Company", client.company, "default_currency") if client.company else None
