@@ -10,6 +10,21 @@ app_license = "gpl-3.0"
 
 required_apps = ["erpnext"]
 
+fixtures = [
+	{
+		"doctype": "Number Card",
+		"filters": [
+			["name", "in", ["TSE Clients", "TSE Security Device", "TSE Transactions"]],
+		],
+	},
+	{
+		"doctype": "Dashboard Chart",
+		"filters": [
+			["name", "in", ["TSE Transactions"]],
+		],
+	},
+]
+
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
 # 	{
