@@ -1,0 +1,281 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "DSFINV-EXP-.#####.",
+  "creation": "2025-12-26 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "details_tab",
+    "sb_export_info",
+    "dsfinv_k_cash_register",
+    "company",
+    "column_break_main",
+    "client_id",
+    "status",
+    "format",
+    "sb_filter",
+    "filter_type",
+    "business_date_start",
+    "business_date_end",
+    "column_break_dates",
+    "creation_date_start",
+    "creation_date_end",
+    "sb_provider_ids",
+    "export_id",
+    "sb_provider_meta",
+    "time_request",
+    "time_start",
+    "time_completed",
+    "time_expiration",
+    "time_error",
+    "error_code",
+    "error_message",
+    "sb_payload",
+    "request_payload",
+    "response_payload",
+    "sb_export_file",
+    "export_file",
+    "file_downloaded_at",
+    "provider_events_tab",
+    "provider_events"
+  ],
+  "fields": [
+    {
+      "fieldname": "details_tab",
+      "fieldtype": "Tab Break",
+      "label": "Details"
+    },
+    {
+      "fieldname": "sb_export_info",
+      "fieldtype": "Section Break",
+      "label": "Export Info"
+    },
+    {
+      "fieldname": "dsfinv_k_cash_register",
+      "fieldtype": "Link",
+      "label": "DSFinV-K Cash Register",
+      "options": "DSFinV-K Cash Register"
+    },
+    {
+      "fieldname": "company",
+      "fieldtype": "Link",
+      "label": "Company",
+      "options": "Company",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_main",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "client_id",
+      "fieldtype": "Data",
+      "label": "Client ID",
+      "read_only": 1
+    },
+    {
+      "default": "DRAFT",
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Status",
+      "options": "DRAFT\nPENDING\nWORKING\nCOMPLETED\nCANCELLED\nEXPIRED\nDELETED\nERROR",
+      "read_only": 1
+    },
+    {
+      "default": "zip",
+      "fieldname": "format",
+      "fieldtype": "Select",
+      "label": "Format",
+      "options": "tar\nzip",
+      "reqd": 1
+    },
+    {
+      "fieldname": "sb_filter",
+      "fieldtype": "Section Break",
+      "label": "Filter"
+    },
+    {
+      "default": "Business Date",
+      "fieldname": "filter_type",
+      "fieldtype": "Select",
+      "label": "Filter Type",
+      "options": "Business Date\nCreation Date",
+      "reqd": 1
+    },
+    {
+      "fieldname": "business_date_start",
+      "fieldtype": "Date",
+      "label": "Business Date Start",
+      "depends_on": "eval:doc.filter_type==\"Business Date\""
+    },
+    {
+      "fieldname": "business_date_end",
+      "fieldtype": "Date",
+      "label": "Business Date End",
+      "depends_on": "eval:doc.filter_type==\"Business Date\""
+    },
+    {
+      "fieldname": "column_break_dates",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "creation_date_start",
+      "fieldtype": "Datetime",
+      "label": "Creation Date Start",
+      "depends_on": "eval:doc.filter_type==\"Creation Date\""
+    },
+    {
+      "fieldname": "creation_date_end",
+      "fieldtype": "Datetime",
+      "label": "Creation Date End",
+      "depends_on": "eval:doc.filter_type==\"Creation Date\""
+    },
+    {
+      "fieldname": "sb_provider_ids",
+      "fieldtype": "Section Break",
+      "label": "Provider IDs"
+    },
+    {
+      "fieldname": "export_id",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Export ID",
+      "read_only": 1
+    },
+    {
+      "fieldname": "sb_provider_meta",
+      "fieldtype": "Section Break",
+      "label": "Provider Metadata"
+    },
+    {
+      "fieldname": "time_request",
+      "fieldtype": "Datetime",
+      "label": "Time Request",
+      "read_only": 1
+    },
+    {
+      "fieldname": "time_start",
+      "fieldtype": "Datetime",
+      "label": "Time Start",
+      "read_only": 1
+    },
+    {
+      "fieldname": "time_completed",
+      "fieldtype": "Datetime",
+      "label": "Time Completed",
+      "read_only": 1
+    },
+    {
+      "fieldname": "time_expiration",
+      "fieldtype": "Datetime",
+      "label": "Time Expiration",
+      "read_only": 1
+    },
+    {
+      "fieldname": "time_error",
+      "fieldtype": "Datetime",
+      "label": "Time Error",
+      "read_only": 1
+    },
+    {
+      "fieldname": "error_code",
+      "fieldtype": "Data",
+      "label": "Error Code",
+      "read_only": 1
+    },
+    {
+      "fieldname": "error_message",
+      "fieldtype": "Small Text",
+      "label": "Error Message",
+      "read_only": 1
+    },
+    {
+      "fieldname": "sb_payload",
+      "fieldtype": "Section Break",
+      "label": "Payload"
+    },
+    {
+      "fieldname": "request_payload",
+      "fieldtype": "Code",
+      "label": "Request Payload",
+      "options": "JSON",
+      "read_only": 1
+    },
+    {
+      "fieldname": "response_payload",
+      "fieldtype": "Code",
+      "label": "Response Payload",
+      "options": "JSON",
+      "read_only": 1
+    },
+    {
+      "fieldname": "sb_export_file",
+      "fieldtype": "Section Break",
+      "label": "Export File"
+    },
+    {
+      "fieldname": "export_file",
+      "fieldtype": "Attach",
+      "label": "Export File",
+      "read_only": 1
+    },
+    {
+      "fieldname": "file_downloaded_at",
+      "fieldtype": "Datetime",
+      "label": "File Downloaded At",
+      "read_only": 1
+    },
+    {
+      "fieldname": "provider_events_tab",
+      "fieldtype": "Tab Break",
+      "label": "Events"
+    },
+    {
+      "fieldname": "provider_events",
+      "fieldtype": "Table",
+      "label": "Provider Events",
+      "options": "DSFinV-K Export Provider Event"
+    }
+  ],
+  "grid_page_length": 50,
+  "links": [],
+  "modified": "2025-12-26 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "ERPNext TSE",
+  "name": "DSFinV-K Export",
+  "naming_rule": "Expression",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    },
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "TSE Admin",
+      "share": 1,
+      "write": 1
+    }
+  ],
+  "row_format": "Dynamic",
+  "rows_threshold_for_grid_search": 20,
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": []
+}
