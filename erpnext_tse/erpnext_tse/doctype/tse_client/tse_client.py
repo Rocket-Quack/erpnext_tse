@@ -1,7 +1,10 @@
 # Copyright (c) 2025, RocketQuackIT and contributors
 # For license information, please see LICENSE
 
+from datetime import datetime
+
 import frappe
+from erpnext import __version__ as erpnext_version
 from frappe import _
 from frappe.model.document import Document
 
@@ -151,6 +154,10 @@ class TSEClient(Document):
 
 		# Dokument speichern
 		self.save(ignore_permissions=True)
+
+		# DSFinV-K Cash Register automatisch anlegen
+		_sync_dsfinvk_cash_register(self, tss, provider)
+
 		frappe.db.commit()
 
 	@frappe.whitelist()
@@ -272,3 +279,155 @@ class TSEClient(Document):
 		# Dokument speichern
 		self.save(ignore_permissions=True)
 		frappe.db.commit()
+
+
+def _build_dsfinvk_cash_register_payload(client, tss):
+	brand = "ERPNext"
+	model = client.pos_profile or client.client_name or client.name
+	software = {
+		"brand": "ERPNext",
+		"version": erpnext_version,
+	}
+	base_currency = (
+		frappe.db.get_value("Company", client.company, "default_currency") if client.company else None
+	)
+	if not base_currency:
+		raise ValueError("Missing default currency for company.")
+
+	metadata = {
+		"company": client.company,
+		"pos_profile": client.pos_profile,
+		"tse_client": client.name,
+		"tse_client_name": client.client_name,
+	}
+	metadata = {k: str(v) for k, v in metadata.items() if v}
+
+	payload = {
+		"cash_register_type": {
+			"type": "MASTER",
+			"tss_id": tss.tss_id,
+		},
+		"brand": brand,
+		"model": model,
+		"base_currency_code": base_currency,
+		"software": software,
+		"metadata": metadata,
+	}
+
+	return payload, metadata
+
+
+def _get_or_create_dsfinvk_cash_register(client):
+	name = frappe.db.get_value(
+		"DSFinV-K Cash Register",
+		{"tse_client": client.name},
+		"name",
+	)
+	if name:
+		return frappe.get_doc("DSFinV-K Cash Register", name)
+
+	doc = frappe.new_doc("DSFinV-K Cash Register")
+	doc.tse_client = client.name
+	doc.pos_profile = client.pos_profile
+	doc.company = client.company
+	doc.status = "DRAFT"
+	return doc
+
+
+def _to_datetime(value):
+	if value is None:
+		return None
+	try:
+		if isinstance(value, int | float):
+			return datetime.fromtimestamp(value)
+		return frappe.utils.get_datetime(value)
+	except Exception:
+		return None
+
+
+def _apply_dsfinvk_payload(doc, payload, metadata):
+	doc.cash_register_type = payload.get("cash_register_type", {}).get("type")
+	doc.tss_id = payload.get("cash_register_type", {}).get("tss_id")
+	doc.brand = payload.get("brand")
+	doc.model = payload.get("model")
+	doc.base_currency_code = payload.get("base_currency_code")
+	software = payload.get("software") or {}
+	doc.software_brand = software.get("brand")
+	doc.software_version = software.get("version")
+	if metadata:
+		doc.metadata_json = frappe.as_json(metadata, indent=2)
+
+
+def _apply_dsfinvk_response(doc, payload, metadata, resp):
+	doc.cash_register_id = resp.get("client_id") or doc.cash_register_id
+	doc.cash_register_type = resp.get("cash_register_type") or payload.get("cash_register_type", {}).get(
+		"type"
+	)
+	doc.tss_id = resp.get("tss_id") or payload.get("cash_register_type", {}).get("tss_id")
+	doc.brand = resp.get("brand") or payload.get("brand")
+	doc.model = resp.get("model") or payload.get("model")
+	doc.base_currency_code = resp.get("base_currency_code") or payload.get("base_currency_code")
+	software = resp.get("software") or payload.get("software") or {}
+	doc.software_brand = software.get("brand")
+	doc.software_version = software.get("version")
+	doc.revision = resp.get("revision")
+	doc.time_creation = _to_datetime(resp.get("time_creation"))
+	doc.time_update = _to_datetime(resp.get("time_update"))
+	metadata_value = resp.get("metadata") or metadata
+	if metadata_value is not None:
+		doc.metadata_json = frappe.as_json(metadata_value, indent=2)
+
+
+def _sync_dsfinvk_cash_register(client, tss, provider):
+	if not client.client_id:
+		return
+
+	doc = _get_or_create_dsfinvk_cash_register(client)
+	doc.cash_register_id = client.client_id
+	doc.pos_profile = client.pos_profile
+	doc.company = client.company
+	doc.tss_id = tss.tss_id
+	doc.cash_register_type = "MASTER"
+	status_before = doc.status
+	payload = None
+	metadata = None
+
+	try:
+		payload, metadata = _build_dsfinvk_cash_register_payload(client, tss)
+		_apply_dsfinvk_payload(doc, payload, metadata)
+		resp = provider.create_cash_register(payload, cash_register_id=client.client_id)
+		_apply_dsfinvk_response(doc, payload, metadata, resp)
+		doc.status = "ACTIVE"
+		doc.log_provider_event(
+			event_type="UPSERT_CASH_REGISTER",
+			provider_action="upsert_cash_register",
+			resp=resp,
+			status_before=status_before,
+			status_after=doc.status,
+			message_summary="Cash Register upserted at provider",
+		)
+		if doc.is_new():
+			doc.insert(ignore_permissions=True)
+		else:
+			doc.save(ignore_permissions=True)
+	except Exception as exc:
+		if payload:
+			_apply_dsfinvk_payload(doc, payload, metadata or {})
+		doc.status = "ERROR"
+		doc.log_provider_event(
+			event_type="UPSERT_CASH_REGISTER_FAILED",
+			provider_action="upsert_cash_register",
+			resp={"error": {"message": str(exc)}},
+			status_before=status_before,
+			status_after=doc.status,
+			message_summary="Cash Register upsert failed",
+		)
+		if doc.is_new():
+			doc.insert(ignore_permissions=True)
+		else:
+			doc.save(ignore_permissions=True)
+		frappe.log_error(frappe.get_traceback(), _("DSFinV-K Cash Register sync failed"))
+		frappe.msgprint(
+			_("DSFinV-K Cash Register sync failed. Please review the DSFinV-K Cash Register record."),
+			indicator="orange",
+		)

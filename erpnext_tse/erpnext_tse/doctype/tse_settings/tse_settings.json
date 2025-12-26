@@ -14,6 +14,8 @@
   "environment",
   "base_url",
   "dsfinvk_base_url",
+  "sb_dsfinvk_export",
+  "dsfinvk_export_retention_days",
   "api_key",
   "api_secret",
   "organisation_tab",
@@ -111,6 +113,18 @@
    "fieldname": "dsfinvk_base_url",
    "fieldtype": "Data",
    "label": "DSFinV-K Base URL"
+  },
+  {
+   "fieldname": "sb_dsfinvk_export",
+   "fieldtype": "Section Break",
+   "label": "DSFinV-K Export"
+  },
+  {
+   "default": "30",
+   "description": "Number of days to keep downloaded DSFinV-K export files (0 disables cleanup).",
+   "fieldname": "dsfinvk_export_retention_days",
+   "fieldtype": "Int",
+   "label": "Export Retention (Days)"
   },
   {
    "fieldname": "api_key",
