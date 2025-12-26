@@ -1,0 +1,117 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "creation": "2025-12-26 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "section_break_main",
+    "event_time",
+    "event_type",
+    "provider_action",
+    "status_before",
+    "status_after",
+    "http_status_code",
+    "provider_error_code",
+    "column_break_err",
+    "message_summary",
+    "provider_error_message",
+    "response_payload",
+    "request_id",
+    "triggered_by"
+  ],
+  "fields": [
+    {
+      "fieldname": "event_time",
+      "fieldtype": "Datetime",
+      "in_list_view": 1,
+      "label": "Event Time",
+      "read_only": 1
+    },
+    {
+      "fieldname": "event_type",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Event Type"
+    },
+    {
+      "fieldname": "provider_action",
+      "fieldtype": "Data",
+      "label": "Provider Action"
+    },
+    {
+      "fieldname": "status_before",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Status Before"
+    },
+    {
+      "fieldname": "status_after",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Status After"
+    },
+    {
+      "fieldname": "http_status_code",
+      "fieldtype": "Int",
+      "label": "HTTP Status"
+    },
+    {
+      "fieldname": "provider_error_code",
+      "fieldtype": "Data",
+      "label": "Error Code"
+    },
+    {
+      "fieldname": "column_break_err",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "message_summary",
+      "fieldtype": "Small Text",
+      "in_list_view": 1,
+      "label": "Message Summary"
+    },
+    {
+      "fieldname": "provider_error_message",
+      "fieldtype": "Small Text",
+      "label": "Error Message"
+    },
+    {
+      "fieldname": "response_payload",
+      "fieldtype": "Code",
+      "label": "Response Payload",
+      "options": "JSON"
+    },
+    {
+      "fieldname": "request_id",
+      "fieldtype": "Data",
+      "label": "Request ID"
+    },
+    {
+      "fieldname": "triggered_by",
+      "fieldtype": "Link",
+      "label": "Triggered By",
+      "options": "User"
+    },
+    {
+      "fieldname": "section_break_main",
+      "fieldtype": "Section Break",
+      "read_only": 1
+    }
+  ],
+  "grid_page_length": 50,
+  "index_web_pages_for_search": 1,
+  "istable": 1,
+  "links": [],
+  "modified": "2025-12-26 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "ERPNext TSE",
+  "name": "DSFinV-K Export Provider Event",
+  "owner": "Administrator",
+  "permissions": [],
+  "row_format": "Dynamic",
+  "rows_threshold_for_grid_search": 20,
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": []
+}

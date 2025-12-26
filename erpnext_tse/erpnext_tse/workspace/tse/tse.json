@@ -154,6 +154,16 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "DSFinV-K Export",
+   "link_count": 0,
+   "link_to": "DSFinV-K Export",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
  "modified": "2025-12-26 15:39:14.619160",

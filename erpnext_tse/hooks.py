@@ -188,6 +188,10 @@ doc_events = {
 scheduler_events = {
 	"hourly": [
 		"erpnext_tse.erpnext_tse.doctype.dsfinv_k_cash_point_closing.dsfinv_k_cash_point_closing.refresh_pending_cash_point_closings",
+		"erpnext_tse.erpnext_tse.doctype.dsfinv_k_export.dsfinv_k_export.refresh_pending_exports",
+	],
+	"daily": [
+		"erpnext_tse.erpnext_tse.doctype.dsfinv_k_export.dsfinv_k_export.cleanup_expired_export_files",
 	],
 }
 
