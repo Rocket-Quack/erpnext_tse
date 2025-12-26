@@ -51,7 +51,7 @@
    "hidden": 0,
    "is_query_report": 0,
    "label": "Settings",
-   "link_count": 3,
+   "link_count": 5,
    "link_type": "DocType",
    "onboard": 0,
    "type": "Card Break"
@@ -89,8 +89,28 @@
   {
    "hidden": 0,
    "is_query_report": 0,
+   "label": "DSFinV-K Payment Type",
+   "link_count": 0,
+   "link_to": "DSFinV-K Payment Type",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "DSFinV-K VAT Definition",
+   "link_count": 0,
+   "link_to": "DSFinV-K VAT Definition",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
    "label": "Maintenance",
-   "link_count": 3,
+   "link_count": 4,
    "link_type": "DocType",
    "onboard": 0,
    "type": "Card Break"
@@ -124,9 +144,19 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "DSFinV-K Cash Point Closing",
+   "link_count": 0,
+   "link_to": "DSFinV-K Cash Point Closing",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2025-12-26 13:56:40.750079",
+ "modified": "2025-12-26 14:47:08.352901",
  "modified_by": "test@test.test",
  "module": "ERPNext TSE",
  "name": "TSE",
