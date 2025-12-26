@@ -38,3 +38,31 @@ Die App kommuniziert direkt mit der fiskaly-API, um die Technische Sicherheitsei
 - Trage den **API Key** und das **API Secret** in den Einstellungen der Frappe App **ERPNext TSE** ein
 
 <img src="/docs/assets/TSE-Settings/API_KEY_API_SECRET.png" alt="ERPNext TSE Settings Ansicht"/>
+
+## DSFinV-K Einstellungen
+
+Die DSFinV-K Funktionen verwenden zusaetzliche Einstellungen und Mapping-Doctypes.
+
+### 1. DSFinV-K Base URL (optional)
+- In **TSE Settings** kann die DSFinV-K Base URL ueberschrieben werden.
+- Standard: `https://dsfinvk.fiskaly.com/api/v1`
+
+### 2. Export Retention (Days)
+- In **TSE Settings** kann festgelegt werden, wie lange heruntergeladene Exportdateien gespeichert bleiben.
+- Wert `0` deaktiviert die automatische Bereinigung.
+
+### 3. DSFinV-K VAT Rate Mapping
+- Doctype: **DSFinV-K VAT Rate**
+- Jeder Tax Account muss einer VAT Definition ID zugeordnet werden.
+
+### 4. DSFinV-K Payment Type Mapping
+- Doctype: **DSFinV-K Payment Type**
+- Jede Mode of Payment wird einem DSFinV-K Payment Type zugeordnet (Bar, Unbar, EC, Kreditkarte, ...).
+
+### 5. DSFinV-K Cash Register und Cash Point Closing
+- Cash Register werden automatisch beim Registrieren des TSE Clients angelegt.
+- Cash Point Closings werden beim Submit eines POS Closing Entry erstellt.
+
+### 6. DSFinV-K Export
+- Exporte werden manuell im Doctype **DSFinV-K Export** gestartet.
+- Format (zip/tar) wird beim Triggern angegeben.
