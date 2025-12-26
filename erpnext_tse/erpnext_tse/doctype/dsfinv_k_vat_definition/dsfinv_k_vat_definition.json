@@ -1,0 +1,106 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "autoname": "DSFINV-VAT-.#####.",
+  "creation": "2025-12-26 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "company",
+    "section_break_main",
+    "column_break_account",
+    "account",
+    "column_break_vat",
+    "vat_definition_export_id",
+    "column_break_desc",
+    "description"
+  ],
+  "fields": [
+    {
+      "fetch_from": "account.company",
+      "fieldname": "company",
+      "fieldtype": "Link",
+      "hidden": 1,
+      "options": "Company",
+      "read_only": 1
+    },
+    {
+      "fieldname": "section_break_main",
+      "fieldtype": "Section Break"
+    },
+    {
+      "fieldname": "account",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Account",
+      "link_filters": "[[\"Account\",\"account_type\",\"=\",\"Tax\"],[\"Account\",\"disabled\",\"=\",0],[\"Account\",\"is_group\",\"=\",0]]",
+      "options": "Account",
+      "reqd": 1
+    },
+    {
+      "fieldname": "column_break_account",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "vat_definition_export_id",
+      "fieldtype": "Int",
+      "in_list_view": 1,
+      "label": "VAT Definition ID",
+      "reqd": 1
+    },
+    {
+      "fieldname": "column_break_vat",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "description",
+      "fieldtype": "Data",
+      "label": "Description",
+      "reqd": 1
+    },
+    {
+      "fieldname": "column_break_desc",
+      "fieldtype": "Column Break"
+    }
+  ],
+  "grid_page_length": 50,
+  "index_web_pages_for_search": 1,
+  "links": [],
+  "modified": "2025-12-26 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "ERPNext TSE",
+  "name": "DSFinV-K VAT Definition",
+  "naming_rule": "Expression",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    },
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "TSE Admin",
+      "share": 1,
+      "write": 1
+    }
+  ],
+  "row_format": "Dynamic",
+  "rows_threshold_for_grid_search": 20,
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": []
+}

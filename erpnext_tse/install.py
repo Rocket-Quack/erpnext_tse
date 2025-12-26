@@ -9,6 +9,8 @@ def after_install():
 	create_tse_roles()
 	create_default_vat_rates()
 	create_default_payment_types()
+	create_default_dsfinvk_vat_definitions()
+	create_default_dsfinvk_payment_types()
 	create_custom_fields_for_erpnext()
 
 
@@ -17,6 +19,8 @@ def after_migrate():
 	create_tse_roles()
 	create_default_vat_rates()
 	create_default_payment_types()
+	create_default_dsfinvk_vat_definitions()
+	create_default_dsfinvk_payment_types()
 	create_custom_fields_for_erpnext()
 
 
@@ -76,6 +80,46 @@ def create_default_payment_types():
 					"payment_code": pt["payment_code"],
 					"description": pt["description"],
 					"is_active": 1,
+				}
+			).insert(ignore_permissions=True, ignore_mandatory=True)
+
+
+def create_default_dsfinvk_vat_definitions():
+	default_definitions = [
+		{"vat_definition_export_id": 1, "description": "Standard tax rate"},
+		{"vat_definition_export_id": 2, "description": "Reduced tax rate"},
+		{"vat_definition_export_id": 5, "description": "Non-taxable"},
+		{"vat_definition_export_id": 6, "description": "Exempt from VAT"},
+		{"vat_definition_export_id": 7, "description": "Non-taxable for turnover tax"},
+	]
+
+	for definition in default_definitions:
+		if not frappe.db.exists(
+			"DSFinV-K VAT Definition",
+			{"vat_definition_export_id": definition["vat_definition_export_id"]},
+		):
+			frappe.get_doc(
+				{
+					"doctype": "DSFinV-K VAT Definition",
+					"vat_definition_export_id": definition["vat_definition_export_id"],
+					"description": definition["description"],
+				}
+			).insert(ignore_permissions=True, ignore_mandatory=True)
+
+
+def create_default_dsfinvk_payment_types():
+	default_payment_types = [
+		{"payment_type": "Bar", "description": "Cash payment"},
+		{"payment_type": "Unbar", "description": "Non-cash payment"},
+	]
+
+	for payment_type in default_payment_types:
+		if not frappe.db.exists("DSFinV-K Payment Type", {"payment_type": payment_type["payment_type"]}):
+			frappe.get_doc(
+				{
+					"doctype": "DSFinV-K Payment Type",
+					"payment_type": payment_type["payment_type"],
+					"description": payment_type["description"],
 				}
 			).insert(ignore_permissions=True, ignore_mandatory=True)
 

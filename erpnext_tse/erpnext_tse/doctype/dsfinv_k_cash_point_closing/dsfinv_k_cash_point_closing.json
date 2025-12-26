@@ -1,36 +1,36 @@
 {
   "actions": [],
   "allow_rename": 1,
-  "autoname": "DSFINV-CR-.#####.",
+  "autoname": "DSFINV-CPC-.#####.",
   "creation": "2025-12-26 00:00:00.000000",
   "doctype": "DocType",
   "engine": "InnoDB",
   "field_order": [
     "details_tab",
-    "sb_register_info",
+    "sb_closing_info",
+    "pos_closing_entry",
+    "dsfinv_k_cash_register",
     "tse_client",
-    "pos_profile",
     "column_break_main",
+    "pos_profile",
     "company",
     "status",
     "sb_provider_ids",
-    "cash_register_id",
-    "tss_id",
+    "closing_id",
+    "cash_point_closing_export_id",
     "column_break_ids",
-    "cash_register_type",
-    "revision",
-    "last_cash_point_closing_export_id",
-    "sb_masterdata",
-    "brand",
-    "model",
-    "column_break_md",
-    "base_currency_code",
-    "software_brand",
-    "software_version",
+    "client_id",
+    "business_date",
+    "export_creation_date",
     "sb_provider_meta",
     "time_creation",
     "time_update",
-    "metadata_json",
+    "time_deleted",
+    "error_code",
+    "error_message",
+    "sb_payload",
+    "request_payload",
+    "response_payload",
     "provider_events_tab",
     "provider_events"
   ],
@@ -41,31 +41,44 @@
       "label": "Details"
     },
     {
-      "fieldname": "sb_register_info",
+      "fieldname": "sb_closing_info",
       "fieldtype": "Section Break",
-      "label": "Register Info"
+      "label": "Closing Info"
+    },
+    {
+      "fieldname": "pos_closing_entry",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "POS Closing Entry",
+      "options": "POS Closing Entry",
+      "read_only": 1,
+      "reqd": 1
+    },
+    {
+      "fieldname": "dsfinv_k_cash_register",
+      "fieldtype": "Link",
+      "label": "DSFinV-K Cash Register",
+      "options": "DSFinV-K Cash Register",
+      "read_only": 1,
+      "reqd": 1
     },
     {
       "fieldname": "tse_client",
       "fieldtype": "Link",
-      "in_list_view": 1,
       "label": "TSE Client",
       "options": "TSE Client",
-      "read_only": 1,
-      "reqd": 1,
-      "unique": 1
-    },
-    {
-      "fieldname": "pos_profile",
-      "fieldtype": "Link",
-      "in_list_view": 1,
-      "label": "POS Profile",
-      "options": "POS Profile",
       "read_only": 1
     },
     {
       "fieldname": "column_break_main",
       "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "pos_profile",
+      "fieldtype": "Link",
+      "label": "POS Profile",
+      "options": "POS Profile",
+      "read_only": 1
     },
     {
       "fieldname": "company",
@@ -80,7 +93,7 @@
       "fieldtype": "Select",
       "in_list_view": 1,
       "label": "Status",
-      "options": "DRAFT\nACTIVE\nERROR\nORPHANED",
+      "options": "DRAFT\nPENDING\nWORKING\nCOMPLETED\nCANCELLED\nEXPIRED\nDELETED\nERROR",
       "read_only": 1
     },
     {
@@ -89,16 +102,17 @@
       "label": "Provider IDs"
     },
     {
-      "fieldname": "cash_register_id",
+      "fieldname": "closing_id",
       "fieldtype": "Data",
       "in_list_view": 1,
-      "label": "Cash Register ID",
+      "label": "Closing ID",
       "read_only": 1
     },
     {
-      "fieldname": "tss_id",
-      "fieldtype": "Data",
-      "label": "TSS ID",
+      "fieldname": "cash_point_closing_export_id",
+      "fieldtype": "Int",
+      "in_list_view": 1,
+      "label": "Cash Point Closing Export ID",
       "read_only": 1
     },
     {
@@ -106,61 +120,21 @@
       "fieldtype": "Column Break"
     },
     {
-      "fieldname": "cash_register_type",
-      "fieldtype": "Select",
-      "label": "Cash Register Type",
-      "options": "MASTER\nSLAVE_WITHOUT_TSS\nSLAVE_WITH_TSS",
-      "read_only": 1
-    },
-    {
-      "fieldname": "revision",
-      "fieldtype": "Int",
-      "label": "Revision",
-      "read_only": 1
-    },
-    {
-      "fieldname": "last_cash_point_closing_export_id",
-      "fieldtype": "Int",
-      "label": "Last Cash Point Closing Export ID",
-      "read_only": 1
-    },
-    {
-      "fieldname": "sb_masterdata",
-      "fieldtype": "Section Break",
-      "label": "Master Data"
-    },
-    {
-      "fieldname": "brand",
+      "fieldname": "client_id",
       "fieldtype": "Data",
-      "label": "Brand",
+      "label": "Client ID",
       "read_only": 1
     },
     {
-      "fieldname": "model",
-      "fieldtype": "Data",
-      "label": "Model",
+      "fieldname": "business_date",
+      "fieldtype": "Date",
+      "label": "Business Date",
       "read_only": 1
     },
     {
-      "fieldname": "column_break_md",
-      "fieldtype": "Column Break"
-    },
-    {
-      "fieldname": "base_currency_code",
-      "fieldtype": "Data",
-      "label": "Base Currency",
-      "read_only": 1
-    },
-    {
-      "fieldname": "software_brand",
-      "fieldtype": "Data",
-      "label": "Software Brand",
-      "read_only": 1
-    },
-    {
-      "fieldname": "software_version",
-      "fieldtype": "Data",
-      "label": "Software Version",
+      "fieldname": "export_creation_date",
+      "fieldtype": "Datetime",
+      "label": "Export Creation Date",
       "read_only": 1
     },
     {
@@ -181,9 +155,39 @@
       "read_only": 1
     },
     {
-      "fieldname": "metadata_json",
+      "fieldname": "time_deleted",
+      "fieldtype": "Datetime",
+      "label": "Time Deleted",
+      "read_only": 1
+    },
+    {
+      "fieldname": "error_code",
+      "fieldtype": "Data",
+      "label": "Error Code",
+      "read_only": 1
+    },
+    {
+      "fieldname": "error_message",
+      "fieldtype": "Small Text",
+      "label": "Error Message",
+      "read_only": 1
+    },
+    {
+      "fieldname": "sb_payload",
+      "fieldtype": "Section Break",
+      "label": "Payload"
+    },
+    {
+      "fieldname": "request_payload",
       "fieldtype": "Code",
-      "label": "Metadata JSON",
+      "label": "Request Payload",
+      "options": "JSON",
+      "read_only": 1
+    },
+    {
+      "fieldname": "response_payload",
+      "fieldtype": "Code",
+      "label": "Response Payload",
       "options": "JSON",
       "read_only": 1
     },
@@ -196,7 +200,7 @@
       "fieldname": "provider_events",
       "fieldtype": "Table",
       "label": "Provider Events",
-      "options": "DSFinV-K Cash Register Provider Event"
+      "options": "DSFinV-K Cash Point Closing Provider Event"
     }
   ],
   "grid_page_length": 50,
@@ -204,7 +208,7 @@
   "modified": "2025-12-26 00:00:00.000000",
   "modified_by": "Administrator",
   "module": "ERPNext TSE",
-  "name": "DSFinV-K Cash Register",
+  "name": "DSFinV-K Cash Point Closing",
   "naming_rule": "Expression",
   "owner": "Administrator",
   "permissions": [
@@ -239,5 +243,5 @@
   "sort_field": "modified",
   "sort_order": "DESC",
   "states": [],
-  "title_field": "tse_client"
+  "title_field": "pos_closing_entry"
 }
