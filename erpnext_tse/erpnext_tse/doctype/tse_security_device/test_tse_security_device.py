@@ -81,3 +81,25 @@ class TestTSESecurityDeviceRecovery(FrappeTestCase):
 
 		orphan_doc = frappe.get_doc("TSE Security Device", orphan.name)
 		self.assertEqual(orphan_doc.tss_status, "ORPHANED")
+
+
+class TestTSESecurityDeviceRecoveryHelpers(FrappeTestCase):
+	def test_normalize_status(self):
+		self.assertEqual(recovery._normalize_status("deleted"), "DISABLED")
+		self.assertEqual(recovery._normalize_status("initialized"), "INITIALIZED")
+		self.assertIsNone(recovery._normalize_status(None))
+
+	def test_extract_remote_list_variants(self):
+		raw = {"data": [{"id": "tss-1"}]}
+		self.assertEqual(recovery._extract_remote_list(raw), raw["data"])
+
+		raw_single = {"id": "tss-2"}
+		self.assertEqual(recovery._extract_remote_list(raw_single), [raw_single])
+
+		with self.assertRaises(frappe.ValidationError):
+			recovery._extract_remote_list("invalid")
+
+	def test_to_datetime(self):
+		self.assertIsNotNone(recovery._to_datetime(1710000000))
+		self.assertIsNotNone(recovery._to_datetime("1710000000"))
+		self.assertIsNone(recovery._to_datetime("not-a-date"))

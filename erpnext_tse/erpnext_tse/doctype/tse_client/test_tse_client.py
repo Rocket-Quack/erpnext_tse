@@ -83,3 +83,31 @@ class TestTSEClientRecovery(FrappeTestCase):
 
 		orphan_doc = frappe.get_doc("TSE Client", orphan.name)
 		self.assertEqual(orphan_doc.client_status, "ORPHANED")
+
+
+class TestTSEClientRecoveryHelpers(FrappeTestCase):
+	def test_normalize_status(self):
+		self.assertEqual(recovery._normalize_status("registered"), "REGISTERED")
+		self.assertEqual(recovery._normalize_status("deleted"), "DEREGISTERED")
+		self.assertEqual(recovery._normalize_status("weird"), "ERROR")
+		self.assertIsNone(recovery._normalize_status(None))
+
+	def test_extract_remote_list_variants(self):
+		raw = {"data": [{"_id": "client-1"}]}
+		self.assertEqual(recovery._extract_remote_list(raw), raw["data"])
+
+		raw_single = {"_id": "client-2"}
+		self.assertEqual(recovery._extract_remote_list(raw_single), [raw_single])
+
+		with self.assertRaises(frappe.ValidationError):
+			recovery._extract_remote_list("invalid")
+
+	def test_ensure_unique_client_name(self):
+		existing = {"Existing", "Existing-1"}
+
+		def fake_exists(doctype, filters):
+			return filters.get("client_name") in existing
+
+		with patch("frappe.db.exists", side_effect=fake_exists):
+			self.assertEqual(recovery._ensure_unique_client_name("Existing", None), "Existing-2")
+			self.assertEqual(recovery._ensure_unique_client_name("Existing", "Fallback"), "Fallback")
