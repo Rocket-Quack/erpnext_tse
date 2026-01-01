@@ -1,10 +1,7 @@
 # Recovery-Sync fuer TSE Clients (Fiskaly)
 
 ## Ziel
-Der Recovery-Sync laedt alle Clients je TSS bei Fiskaly, gleicht sie mit lokalen
-TSE Clients ab, legt fehlende Eintraege an und markiert Inkonsistenzen. Damit
-kann eine Umgebung nach einem Desaster oder nach manuellen Aenderungen beim
-Provider wieder konsistent werden.
+Der Recovery-Sync laedt alle Clients je TSS bei Fiskaly, gleicht sie mit lokalen TSE Clients ab, legt fehlende Eintraege an und markiert Inkonsistenzen. Damit kann eine Umgebung nach einem Desaster oder nach manuellen Aenderungen beim Provider wieder konsistent werden.
 
 ## Voraussetzungen
 - TSE Settings: `Aktiviert` und `Recovery Modus` aktiv.
@@ -24,15 +21,14 @@ Provider wieder konsistent werden.
   - `metadata.tse_client_docname`
   - `metadata.tse_client_name` / `metadata.client_name` / `metadata.name`
   - `metadata.pos_profile` / `metadata.pos_profile_name`
-- Aktualisiert bei Match u. a. Status, `client_id`, `serial_number`,
-  `tse_security_device`, `company`, `pos_profile` (nur wenn frei).
+- Aktualisiert bei Match u. a. Status, `client_id`, `serial_number`, `tse_security_device`, `company`, `pos_profile` (nur wenn frei).
 - Legt fehlende Clients an und uebernimmt Provider-Status.
 - Markiert lokale Clients ohne Provider-Match als `ORPHANED`.
 - Schreibt pro Eintrag ein Provider-Event (`UPDATE_STATUS_RECOVERY`).
 
 ## Wichtige Hinweise
-- Recovery ueberschreibt keine POS Profile, die bereits an einen anderen Client
-  gebunden sind (Unique-Constraint).
+- Recovery-Sync aktualisiert nur lokale Daten und aendert keine Provider-Daten.
+- Recovery ueberschreibt keine POS Profile, die bereits an einen anderen Client gebunden sind (Unique-Constraint).
 - ORPHANED bedeutet: Client wurde beim Provider nicht gefunden und muss geprueft werden.
 - Realtime-Event: `tse_client_recovery_done`
 - Job-ID: `tse_client_recovery_sync`
@@ -41,7 +37,7 @@ Provider wieder konsistent werden.
 ```mermaid
 flowchart TD
     A[Start Recovery Sync] --> B[Check TSE Settings<br/>enabled + recovery]
-    B --> C[Load lokale TSS außer ORPHANED]
+    B --> C[Load lokale TSS ausser ORPHANED]
     C --> D[Call Fiskaly /client je TSS]
     D --> E{Client lokal gematcht?}
     E -->|Ja| F[Update Felder/Status<br/>Event: UPDATE_STATUS_RECOVERY]
