@@ -18,12 +18,7 @@ class TestTSESettings(FrappeTestCase):
 		}
 
 	def tearDown(self):
-		frappe.db.set_value(
-			"TSE Settings",
-			"TSE Settings",
-			self._original,
-			update_modified=False,
-		)
+		frappe.db.set_single_value("TSE Settings", self._original, update_modified=False)
 
 	def test_validate_requires_provider_when_enabled(self):
 		self.settings.enabled = 1
