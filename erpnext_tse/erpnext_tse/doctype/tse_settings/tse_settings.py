@@ -38,19 +38,6 @@ class TSESettings(Document):
 		if self.enabled and not self.tse_provider:
 			frappe.throw(_("You must choose a TSE Provider before enabling the TSE integration."))
 
-		if self.enabled:
-			self.tse_disable_acknowledged = 0
-
-		previous = self.get_doc_before_save()
-		if previous and previous.enabled and not self.enabled:
-			if not getattr(self, "tse_disable_acknowledged", None):
-				frappe.throw(
-					_(
-						"Disabling TSE interrupts the continuous signing of receipts. "
-						'Please confirm the warning by checking "I understand this warning".'
-					)
-				)
-
 
 # -------------------------------------------------------------------------
 # Whitelisted API for the client script (Test Auth button)

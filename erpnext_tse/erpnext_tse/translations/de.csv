@@ -155,6 +155,11 @@ Provider Events,Provider Events
 "QR code helper unavailable","QR-Code-Helfer nicht verfügbar"
 "TSE Print Format","TSE-Druckformat"
 TSE Warning,TSE-Warnung,
+"Disable TSE","TSE deaktivieren",
+"Disable TSE integration?","TSE-Integration deaktivieren?",
+"You are about to disable TSE integration.","Sie sind dabei, die TSE-Integration zu deaktivieren.",
+"Disabling stops continuous signing of receipts and can create gaps in the signature chain.","Das Deaktivieren stoppt die fortlaufende Signierung von Belegen und kann Luecken in der Signaturkette verursachen.",
+"Only proceed if you understand the compliance impact.","Fahren Sie nur fort, wenn Sie die rechtlichen Auswirkungen verstehen.",
 "Warning: Disabling TSE interrupts the continuous signing of receipts. This can create gaps in the signature chain. Please confirm that you understand this.","Warnung: Das Deaktivieren der TSE unterbricht die fortlaufende Signierung von Belegen. Dies kann Luecken in der Signaturkette verursachen. Bitte bestaetigen Sie, dass Sie das verstanden haben.",
 "I understand this warning","Ich habe den Hinweis verstanden",
 "Warning: Disabling TSE interrupts the continuous signing of receipts. Please confirm the warning before saving.","Warnung: Das Deaktivieren der TSE unterbricht die fortlaufende Signierung von Belegen. Bitte bestaetigen Sie den Hinweis vor dem Speichern.",
