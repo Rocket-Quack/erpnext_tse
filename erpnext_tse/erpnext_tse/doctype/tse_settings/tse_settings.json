@@ -52,7 +52,7 @@
   {
    "fieldname": "tse_disable_warning_html",
    "fieldtype": "HTML",
-   "options": "<div class=\"alert alert-warning\">Warning: Disabling TSE interrupts the continuous signing of receipts. This can create gaps in the signature chain. Please confirm that you understand this.</div>"
+   "options": ""
   },
   {
    "default": "0",
