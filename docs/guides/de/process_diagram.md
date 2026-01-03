@@ -7,7 +7,7 @@ sequenceDiagram
     participant Fiskaly as Fiskaly Dashboard/API
 
     Admin->>Fiskaly: API-Key und Secret erstellen
-    Admin->>ERP: API-Key/Secret in TSE-Settings eintragen
+    Admin->>ERP: API-Key/Secret in TSE Settings eintragen
     ERP->>Fiskaly: Authentifizieren und Token abrufen
     ERP->>Fiskaly: TSS anlegen (Security Device)
     Fiskaly-->>ERP: TSS-ID und Status
@@ -15,7 +15,7 @@ sequenceDiagram
     Admin->>ERP: Status pruefen = REGISTERED/ACTIVE
 ```
 
-# Ablauf POS-Rechnung 
+# Ablauf POS-Rechnung
 
 ```mermaid
 sequenceDiagram
@@ -24,66 +24,67 @@ sequenceDiagram
     participant App as TSE App
     participant Fiskaly as Fiskaly API
 
-    User->>POS: POS öffnen / POS Profile wählen
+    User->>POS: POS oeffnen / POS Profile waehlen
     POS->>App: Lade TSE Settings + TSE Client vom POS Profile
-    App->>Fiskaly: Überprüfe Token / Aktualisiere Auth Token
-    App->>App: Prüfe TSS-Status (REGISTERED/AKTIV)
+    App->>Fiskaly: Ueberpruefe Token / aktualisiere Auth Token
+    App->>App: Pruefe TSS-Status (REGISTERED/AKTIV)
 
-    User->>POS: Beleg abschließen (Submit POS Invoice)
+    User->>POS: Beleg abschliessen (Submit POS Invoice)
 
     POS->>App: on_submit(POS Invoice)
     App->>Fiskaly: START Transaction
-    App->>Fiskaly: UPDATE Transaction (Process Data: Beträge, Steuern)
+    App->>Fiskaly: UPDATE Transaction (Process Data: Betraege, Steuern)
     App->>Fiskaly: FINISH Transaction
     Fiskaly-->>App: Signaturdaten, QR-Daten, Zeitstempel
 
     App->>POS: Schreibe TSE-Daten in POS Invoice + lege TSE Transaction an
+```
 
-````
+# Clients fuer TSE anlegen
 
-# Clients für TSE anlegen
 ```mermaid
 sequenceDiagram
     participant Admin as Administrator
     participant ERP as ERPNext TSE
     participant Fiskaly as Fiskaly API
 
-    Admin->>ERP: Neuen TSE-Client anlegen
-    ERP->>ERP: TSS-Status prüfen (REGISTERED/ACTIVE)
+    Admin->>ERP: Neuen TSE Client anlegen
+    ERP->>ERP: TSS-Status pruefen (REGISTERED/ACTIVE)
     ERP->>Fiskaly: Client registrieren (tss_id, client_id)
     Fiskaly-->>ERP: Client-ID und Status
     ERP->>ERP: Client-Datensatz speichern
 ```
 
+# POS Profile verknuepfen
 
-# POS Profile verknüpfen
 Kurzbeschreibung:
 - POS Profile fachlich zuerst anlegen.
-- Im TSE-Client das passende POS Profile auswählen und speichern.
-- Die Verknüpfung ist notwendig, damit Verkäufe signiert werden können.
+- Im TSE Client das passende POS Profile auswaehlen und speichern.
+- Die Verknuepfung ist notwendig, damit Verkaeufe signiert werden koennen.
 
 ```mermaid
 sequenceDiagram
     participant Admin as Administrator
     participant POS as ERPNext POS Profile
-    participant Client as TSE-Client
+    participant Client as TSE Client
     participant ERP as ERPNext TSE
 
     Admin->>POS: POS Profile anlegen
-    Admin->>Client: TSE-Client öffnen
-    Client->>ERP: Liste verfügbarer POS Profile laden
-    Admin->>Client: POS Profile auswählen
-    Client->>ERP: Verknüpfung speichern
-    ERP->>Client: Bestätigung und Status anzeigen
+    Admin->>Client: TSE Client oeffnen
+    Client->>ERP: Liste verfuegbarer POS Profile laden
+    Admin->>Client: POS Profile auswaehlen
+    Client->>ERP: Verknuepfung speichern
+    ERP->>Client: Bestaetigung und Status anzeigen
 ```
 
 # Recovery-Sync fuer Security Devices (TSE)
+
 Kurzbeschreibung:
-- In "TSE Settings" den Schalter "Recovery Modus" aktivieren.
-- In der Liste "TSE Security Device" den Button "Recovery Sync" starten (nur im Recovery Modus sichtbar).
+- In **TSE Settings** den Schalter **Recovery Modus** aktivieren.
+- In der Liste **TSE Security Device** den Button **Recovery Sync** starten (nur im Recovery Modus sichtbar).
 - Meldungen: "Recovery sync queued (Job ID: ...)" beim Start, danach "Recovery sync completed successfully."
 - Abgleich der TSS: lokale Eintraege aktualisieren/neu anlegen, nicht gefundene auf `ORPHANED` setzen.
-- Fehlt ein Admin PUK, erscheint der Dialog "Missing Admin PUKs" mit Aktion "Save PUKs".
+- Fehlt ein Admin PUK, erscheint der Dialog **Missing Admin PUKs** mit Aktion **Save PUKs**.
 
 ```mermaid
 sequenceDiagram
@@ -101,10 +102,11 @@ sequenceDiagram
     Admin->>ERP: "Save PUKs"
 ```
 
-# Recovery-Sync fuer TSE-Clients
+# Recovery-Sync fuer TSE Clients
+
 Kurzbeschreibung:
-- In "TSE Settings" den Schalter "Recovery Modus" aktivieren.
-- In der Liste "TSE Client" den Button "Recovery Sync" starten (nur im Recovery Modus sichtbar).
+- In **TSE Settings** den Schalter **Recovery Modus** aktivieren.
+- In der Liste **TSE Client** den Button **Recovery Sync** starten (nur im Recovery Modus sichtbar).
 - Meldung nach Abschluss: "Recovery sync completed successfully."
 - Abgleich der Clients je TSS: lokal matchen, aktualisieren/neu anlegen, fehlende auf `ORPHANED` setzen.
 
@@ -122,10 +124,11 @@ sequenceDiagram
     ERP-->>Admin: "Recovery sync completed successfully."
 ```
 
-# Recovery-Sync fuer TSE-Transaktionen
+# Recovery-Sync fuer TSE Transaktionen
+
 Kurzbeschreibung:
-- In "TSE Settings" den Schalter "Recovery Modus" aktivieren.
-- In der Liste "TSE Transaction" den Button "Recovery Sync" starten (nur im Recovery Modus sichtbar).
+- In **TSE Settings** den Schalter **Recovery Modus** aktivieren.
+- In der Liste **TSE Transaction** den Button **Recovery Sync** starten (nur im Recovery Modus sichtbar).
 - Meldung nach Abschluss: "Recovery sync completed successfully."
 - Abgleich der Transaktionen je TSS: lokal matchen, aktualisieren/neu anlegen, fehlende auf `ORPHANED` setzen.
 - Empfehlung: erst TSE Clients recovern, damit Client-Links korrekt gesetzt werden koennen.

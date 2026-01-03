@@ -12,7 +12,7 @@ Der Recovery-Sync holt alle TSS bei Fiskaly ab, gleicht sie mit lokalen TSE Secu
 1) Oeffne die Liste **TSE Security Device**.  
 2) Klicke auf **Recovery Sync** (Button erscheint nur, wenn Recovery Modus aktiv ist).  
 3) Der Job wird in der Long-Queue eingeplant und laeuft asynchron.  
-4) Bei Abschluss erscheint ein Realtime-Hinweis: „Recovery sync completed successfully.“  
+4) Bei Abschluss erscheint ein Realtime-Hinweis: "Recovery sync completed successfully."  
 5) Falls TSS ohne Admin PUK gefunden werden (Status >= CREATED, kein `admin_puk` hinterlegt), oeffnet sich ein Dialog, in dem fuer jede TSS der Admin PUK manuell eingetragen und gespeichert werden muss. Die PUKs werden danach in den jeweiligen TSE Security Devices abgelegt.
 
 ## Was der Job macht
@@ -27,17 +27,18 @@ Der Recovery-Sync holt alle TSS bei Fiskaly ab, gleicht sie mit lokalen TSE Secu
   - Aktualisiert Status, Seriennummer, Zeitstempel (`time_init`/`time_disable`), Admin PUK (falls geliefert und lokal leer).
   - Schreibt ein Provider Event (`UPDATE_STATUS`, Action `recovery_sync`) mit Status vor/nach und Provider-Response in die Child-Tabelle.
 - Fuer lokale Devices ohne Treffer beim Provider:
-  - Status wird auf `ORPHANED` gesetzt, Event mit Hinweis „TSS missing at provider“.
+  - Status wird auf `ORPHANED` gesetzt, Event mit Hinweis "TSS missing at provider".
 - Fuer Provider-TSS ohne lokalen Eintrag:
   - Legt ein neues TSE Security Device mit Provider-Status an (kein Zuruecksetzen auf DRAFT).
   - Event mit voller Provider-Response.
-- Sammeln aller TSS (Status >= CREATED) ohne Admin PUK -> diese werden im Abschlussdialog abgefragt.
+- Sammelt alle TSS (Status >= CREATED) ohne Admin PUK, die im Abschlussdialog nachgepflegt werden muessen.
 
 ## Wichtige Hinweise
-- Der Admin PUK ist nur beim Anlegen der TSS verfuegbar. Recovery kann den PUK nicht nachtraeglich von Fiskaly holen. Sicher extern speichern!
-- Beim Deaktivieren einer TSS werden vorab alle verknuepften TSE Clients automatisch auf `DEREGISTERED` gesetzt, damit spaetere Aktionen nicht blockieren.
+- Recovery-Sync aktualisiert nur lokale Daten und aendert keine Provider-Daten.
+- Der Admin PUK ist nur beim Anlegen der TSS verfuegbar. Recovery kann den PUK nicht nachtraeglich von Fiskaly holen. Sicher extern speichern.
+- Beim Deaktivieren einer TSS werden vorab alle verknuepften TSE Clients automatisch auf `DEREGISTERED` gesetzt.
 - Fehler im Job werden ins Error Log geschrieben; der Job selbst schlaegt dann fehl.
-- Nach dem Recovery erscheint bei Bedarf ein Dialog zur Nachpflege von Admin PUKs (Status >= CREATED, kein `admin_puk`). Ohne Pflege bleibt das Feld leer und muss manuell befuellt werden.
+- Nach dem Recovery erscheint bei Bedarf ein Dialog zur Nachpflege von Admin PUKs (Status >= CREATED, kein `admin_puk`).
 
 ## Mermaid-Uebersicht (Recovery)
 ```mermaid

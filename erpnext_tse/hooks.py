@@ -29,6 +29,35 @@ fixtures = [
 			["name", "in", ["TSE Transactions"]],
 		],
 	},
+	{
+		"doctype": "Module Onboarding",
+		"filters": [
+			["name", "in", ["TSE Setup"]],
+		],
+	},
+	{
+		"doctype": "Onboarding Step",
+		"filters": [
+			[
+				"name",
+				"in",
+				[
+					"POS Profile zu TSE Client zuweisen",
+					"TSE Client anlegen",
+					"TSE Einstellungen konfigurieren",
+					"TSE Payment Type Configuration",
+					"TSE Security Device anlegen",
+					"TSE VAT Configuration",
+				],
+			],
+		],
+	},
+	{
+		"doctype": "Print Format",
+		"filters": [
+			["name", "in", ["POS Invoice TSE"]],
+		],
+	},
 ]
 
 # Each item in the list will be shown as an app in the apps page

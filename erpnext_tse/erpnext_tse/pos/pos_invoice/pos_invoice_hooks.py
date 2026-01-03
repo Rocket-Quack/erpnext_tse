@@ -5,7 +5,13 @@ import frappe
 from frappe import _
 
 
+def _is_tse_enabled():
+	return bool(frappe.db.get_single_value("TSE Settings", "enabled"))
+
+
 def ensure_tse_transaction_present_and_finished(doc, method):
+	if not _is_tse_enabled():
+		return
 	# Sicherstellen, dass eine TSE Transaction vorhanden ist und den Status Finished hat
 	# Ohne sollte um auch rechtlich sicher zu sein keine Buchung erfolgen
 	if not doc.tse_transaction:
@@ -30,6 +36,8 @@ def show_tse_signing_success_toast(doc, method=None):
 	- Grün: TSE Transaction FINISHED
 	- Rot + Abbruch: TSE Transaction hat nicht Status FINISHED oder andere Fehler
 	"""
+	if not _is_tse_enabled():
+		return
 
 	# Keine verknüpfte TSE Transaction
 	if not getattr(doc, "tse_transaction", None):
