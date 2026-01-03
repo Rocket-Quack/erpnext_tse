@@ -8,6 +8,8 @@
   "allgemein_tab",
   "sb_allgemein",
   "enabled",
+  "tse_disable_warning_html",
+  "tse_disable_acknowledged",
   "sb_cloud_provider",
   "tse_provider",
   "sb_zugangsdaten",
@@ -46,6 +48,17 @@
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Activated"
+  },
+  {
+   "fieldname": "tse_disable_warning_html",
+   "fieldtype": "HTML",
+   "options": "<div class=\"alert alert-warning\">Warning: Disabling TSE interrupts the continuous signing of receipts. This can create gaps in the signature chain. Please confirm that you understand this.</div>"
+  },
+  {
+   "default": "0",
+   "fieldname": "tse_disable_acknowledged",
+   "fieldtype": "Check",
+   "label": "I understand this warning"
   },
   {
    "fieldname": "allgemein_tab",

@@ -15,6 +15,7 @@ class TestTSESettings(FrappeTestCase):
 		self._original = {
 			"enabled": self.settings.enabled,
 			"tse_provider": self.settings.tse_provider,
+			"tse_disable_acknowledged": getattr(self.settings, "tse_disable_acknowledged", 0),
 		}
 
 	def tearDown(self):
@@ -58,6 +59,7 @@ class TestTSESettings(FrappeTestCase):
 
 	def test_test_tse_auth_disabled_raises(self):
 		self.settings.enabled = 0
+		self.settings.tse_disable_acknowledged = 1
 		self.settings.save(ignore_permissions=True)
 
 		with self.assertRaises(frappe.ValidationError):
@@ -78,3 +80,44 @@ class TestTSESettings(FrappeTestCase):
 		self.assertFalse(result["success"])
 		self.assertEqual(result["error_type"], "ValidationError")
 		self.assertIn("bad", result["error_message"])
+
+	def test_test_tse_auth_handles_unexpected_error(self):
+		self.settings.enabled = 1
+		self.settings.tse_provider = self.settings.tse_provider or "Fiskaly"
+		self.settings.save(ignore_permissions=True)
+
+		class ErrorProvider:
+			def test_auth(self):
+				raise Exception("boom")
+
+		with patch.object(tse_settings.TSESettings, "get_provider", return_value=ErrorProvider()):
+			result = tse_settings.test_tse_auth()
+
+		self.assertFalse(result["success"])
+		self.assertEqual(result["error_type"], "Error")
+		self.assertEqual(result["error_message"], "Authentication failed. Please check your settings.")
+
+	def test_validate_requires_disable_ack_when_disabling(self):
+		self.settings.enabled = 1
+		self.settings.tse_provider = self.settings.tse_provider or "Fiskaly"
+		self.settings.tse_disable_acknowledged = 0
+		self.settings.save(ignore_permissions=True)
+
+		disabled = frappe.get_single("TSE Settings")
+		disabled.enabled = 0
+		disabled.tse_disable_acknowledged = 0
+
+		with self.assertRaises(frappe.ValidationError):
+			disabled.save(ignore_permissions=True)
+
+	def test_validate_allows_disable_with_ack(self):
+		self.settings.enabled = 1
+		self.settings.tse_provider = self.settings.tse_provider or "Fiskaly"
+		self.settings.tse_disable_acknowledged = 0
+		self.settings.save(ignore_permissions=True)
+
+		disabled = frappe.get_single("TSE Settings")
+		disabled.enabled = 0
+		disabled.tse_disable_acknowledged = 1
+
+		disabled.save(ignore_permissions=True)
