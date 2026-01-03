@@ -9,6 +9,17 @@ function toggleDisableWarning(frm) {
 	frm.toggle_display("tse_disable_acknowledged", show_warning);
 }
 
+function updateDisableWarningHtml(frm) {
+	const message = __(
+		"Warning: Disabling TSE interrupts the continuous signing of receipts. This can create gaps in the signature chain. Please confirm that you understand this."
+	);
+	frm.set_df_property(
+		"tse_disable_warning_html",
+		"options",
+		`<div class="alert alert-warning">${message}</div>`
+	);
+}
+
 frappe.ui.form.on("TSE Settings", {
 	// Runs every time the form is refreshed (opened, saved, etc.)
 	refresh(frm) {
@@ -90,6 +101,7 @@ frappe.ui.form.on("TSE Settings", {
 		if (frm._tse_was_enabled === undefined) {
 			frm._tse_was_enabled = !!frm.doc.enabled;
 		}
+		updateDisableWarningHtml(frm);
 		toggleDisableWarning(frm);
 	},
 
@@ -125,6 +137,7 @@ frappe.ui.form.on("TSE Settings", {
 				indicator: "orange",
 			});
 		}
+		updateDisableWarningHtml(frm);
 		toggleDisableWarning(frm);
 		// The button will appear / disappear after the user saves and the form reloads
 	},

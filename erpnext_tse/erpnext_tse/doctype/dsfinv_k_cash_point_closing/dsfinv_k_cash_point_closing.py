@@ -13,6 +13,10 @@ from frappe.model.document import Document
 from erpnext_tse.erpnext_tse.tss_providers import get_tse_provider
 
 
+def _is_tse_enabled() -> bool:
+	return bool(frappe.db.get_single_value("TSE Settings", "enabled"))
+
+
 class DSFinVKCashPointClosing(Document):
 	def log_provider_event(
 		self,
@@ -49,6 +53,8 @@ def create_cash_point_closing_for_pos_closing_entry(doc, method: str | None = No
 		doc = frappe.get_doc(doc)
 
 	if doc.doctype != "POS Closing Entry":
+		return
+	if not _is_tse_enabled():
 		return
 
 	if not getattr(doc, "pos_profile", None):
@@ -591,6 +597,9 @@ def enqueue_cash_point_closing_status_refresh(closing_name: str):
 
 
 def refresh_cash_point_closing_status(closing_name: str):
+	if not _is_tse_enabled():
+		return
+
 	closing_doc = frappe.get_doc("DSFinV-K Cash Point Closing", closing_name)
 	if not closing_doc.closing_id:
 		return
@@ -632,6 +641,9 @@ def refresh_cash_point_closing_status(closing_name: str):
 
 
 def refresh_pending_cash_point_closings():
+	if not _is_tse_enabled():
+		return
+
 	pending = frappe.get_all(
 		"DSFinV-K Cash Point Closing",
 		filters={
