@@ -14,6 +14,10 @@ from frappe.model.document import Document
 from erpnext_tse.erpnext_tse.tss_providers import get_tse_provider
 
 
+def _is_tse_enabled() -> bool:
+	return bool(frappe.db.get_single_value("TSE Settings", "enabled"))
+
+
 class DSFinVKExport(Document):
 	def log_provider_event(
 		self,
@@ -46,6 +50,9 @@ class DSFinVKExport(Document):
 
 @frappe.whitelist()
 def trigger_export(name: str):
+	if not _is_tse_enabled():
+		frappe.throw(_("TSE integration is disabled. Please enable it in TSE Settings."))
+
 	doc = frappe.get_doc("DSFinV-K Export", name)
 	if doc.export_id:
 		frappe.throw(_("Export has already been triggered."))
@@ -98,6 +105,9 @@ def refresh_export_status(name: str):
 
 @frappe.whitelist()
 def download_export(name: str):
+	if not _is_tse_enabled():
+		frappe.throw(_("TSE integration is disabled. Please enable it in TSE Settings."))
+
 	doc = frappe.get_doc("DSFinV-K Export", name)
 	if not doc.export_id:
 		frappe.throw(_("Export has not been triggered yet."))
@@ -192,6 +202,9 @@ def _apply_export_response(doc: Document, resp: dict[str, Any]):
 
 
 def _refresh_export_status_doc(doc: Document):
+	if not _is_tse_enabled():
+		return
+
 	if not doc.export_id:
 		frappe.throw(_("Export has not been triggered yet."))
 
@@ -240,6 +253,9 @@ def enqueue_export_status_refresh(export_name: str):
 
 
 def refresh_pending_exports():
+	if not _is_tse_enabled():
+		return
+
 	pending = frappe.get_all(
 		"DSFinV-K Export",
 		filters={
@@ -254,6 +270,9 @@ def refresh_pending_exports():
 
 
 def cleanup_expired_export_files():
+	if not _is_tse_enabled():
+		return
+
 	retention_days = frappe.db.get_single_value("TSE Settings", "dsfinvk_export_retention_days") or 0
 	try:
 		retention_days = int(retention_days)
