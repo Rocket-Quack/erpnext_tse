@@ -3,10 +3,11 @@
 
 import frappe
 from frappe import _
+from frappe.utils import cint
 
 
 def _is_tse_enabled():
-	return bool(frappe.db.get_single_value("TSE Settings", "enabled"))
+	return bool(cint(frappe.db.get_single_value("TSE Settings", "enabled")))
 
 
 def ensure_tse_transaction_present_and_finished(doc, method):
