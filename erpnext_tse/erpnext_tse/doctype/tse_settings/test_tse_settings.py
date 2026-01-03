@@ -59,6 +59,7 @@ class TestTSESettings(FrappeTestCase):
 
 	def test_test_tse_auth_disabled_raises(self):
 		self.settings.enabled = 0
+		self.settings.tse_disable_acknowledged = 1
 		self.settings.save(ignore_permissions=True)
 
 		with self.assertRaises(frappe.ValidationError):
@@ -107,7 +108,7 @@ class TestTSESettings(FrappeTestCase):
 		disabled.tse_disable_acknowledged = 0
 
 		with self.assertRaises(frappe.ValidationError):
-			disabled.validate()
+			disabled.save(ignore_permissions=True)
 
 	def test_validate_allows_disable_with_ack(self):
 		self.settings.enabled = 1
@@ -119,4 +120,4 @@ class TestTSESettings(FrappeTestCase):
 		disabled.enabled = 0
 		disabled.tse_disable_acknowledged = 1
 
-		disabled.validate()
+		disabled.save(ignore_permissions=True)
