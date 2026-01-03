@@ -154,3 +154,8 @@ Provider Events,Provider Events
 "Export requires either by_creation_date or by_business_date payload.","Der Export erfordert entweder by_creation_date- oder by_business_date-Payload."
 "QR code helper unavailable","QR-Code-Helfer nicht verfügbar"
 "TSE Print Format","TSE-Druckformat"
+TSE Warning,TSE-Warnung,
+"Warning: Disabling TSE interrupts the continuous signing of receipts. This can create gaps in the signature chain. Please confirm that you understand this.","Warnung: Das Deaktivieren der TSE unterbricht die fortlaufende Signierung von Belegen. Dies kann Luecken in der Signaturkette verursachen. Bitte bestaetigen Sie, dass Sie das verstanden haben.",
+"I understand this warning","Ich habe den Hinweis verstanden",
+"Warning: Disabling TSE interrupts the continuous signing of receipts. Please confirm the warning before saving.","Warnung: Das Deaktivieren der TSE unterbricht die fortlaufende Signierung von Belegen. Bitte bestaetigen Sie den Hinweis vor dem Speichern.",
+"Disabling TSE interrupts the continuous signing of receipts. Please confirm the warning by checking ""I understand this warning"".","Das Deaktivieren der TSE unterbricht die fortlaufende Signierung von Belegen. Bitte bestaetigen Sie den Hinweis, indem Sie ""Ich habe den Hinweis verstanden"" ankreuzen.",
