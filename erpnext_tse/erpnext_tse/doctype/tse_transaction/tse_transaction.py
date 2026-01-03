@@ -306,6 +306,9 @@ def create_tse_transaction_for_pos_invoice(doc, method: str | None = None):
 	if doc.doctype != "POS Invoice":
 		return
 
+	if not frappe.db.get_single_value("TSE Settings", "enabled"):
+		return
+
 	# 3. POS Profile holen
 	if not getattr(doc, "pos_profile", None):
 		frappe.throw(_("POS Invoice is missing a POS Profile."))
