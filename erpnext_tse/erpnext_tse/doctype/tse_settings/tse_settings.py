@@ -38,6 +38,19 @@ class TSESettings(Document):
 		if self.enabled and not self.tse_provider:
 			frappe.throw(_("You must choose a TSE Provider before enabling the TSE integration."))
 
+		if self.enabled:
+			self.tse_disable_acknowledged = 0
+
+		previous = self.get_doc_before_save()
+		if previous and previous.enabled and not self.enabled:
+			if not getattr(self, "tse_disable_acknowledged", None):
+				frappe.throw(
+					_(
+						"Disabling TSE interrupts the continuous signing of receipts. "
+						'Please confirm the warning by checking "I understand this warning".'
+					)
+				)
+
 
 # -------------------------------------------------------------------------
 # Whitelisted API for the client script (Test Auth button)
@@ -67,17 +80,18 @@ def test_tse_auth() -> dict[str, Any]:
 		# Auth-Fehler etc. -> kontrolliert zurückgeben
 		return {
 			"success": False,
-			"error_type": exc.__class__.__name__,
+			"error_type": "ValidationError",
 			"error_message": str(exc),
 			"last_auth_status": getattr(settings, "last_auth_status", None),
 			"last_auth_message": getattr(settings, "last_auth_message", None),
 		}
-	except Exception as exc:
+	except Exception:
 		# Fallback
+		frappe.log_error(frappe.get_traceback(), "TSE auth failed")
 		return {
 			"success": False,
-			"error_type": exc.__class__.__name__,
-			"error_message": str(exc),
+			"error_type": "Error",
+			"error_message": _("Authentication failed. Please check your settings."),
 			"last_auth_status": getattr(settings, "last_auth_status", None),
 			"last_auth_message": getattr(settings, "last_auth_message", None),
 		}

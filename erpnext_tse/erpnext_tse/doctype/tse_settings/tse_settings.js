@@ -2,6 +2,13 @@
 // For license information, please see LICENSE
 
 // Client-side logic for the TSE Settings doctype
+function toggleDisableWarning(frm) {
+	const was_enabled = !!frm._tse_was_enabled;
+	const show_warning = was_enabled && !frm.doc.enabled;
+	frm.toggle_display("tse_disable_warning_html", show_warning);
+	frm.toggle_display("tse_disable_acknowledged", show_warning);
+}
+
 frappe.ui.form.on("TSE Settings", {
 	// Runs every time the form is refreshed (opened, saved, etc.)
 	refresh(frm) {
@@ -80,6 +87,10 @@ frappe.ui.form.on("TSE Settings", {
 				});
 			});
 		}
+		if (frm._tse_was_enabled === undefined) {
+			frm._tse_was_enabled = !!frm.doc.enabled;
+		}
+		toggleDisableWarning(frm);
 	},
 
 	// Triggered when the "enabled" checkbox is toggled
@@ -90,11 +101,22 @@ frappe.ui.form.on("TSE Settings", {
 			console.log("[TSE Settings] enabled changed:", frm.doc.enabled);
 		}
 
+		const was_enabled = !!frm._tse_was_enabled;
+
 		if (frm.doc.enabled) {
+			frm.set_value("tse_disable_acknowledged", 0);
 			frappe.msgprint({
 				title: __("TSE Enabled"),
 				message: __("TSE integration has been enabled. Please save to apply changes."),
 				indicator: "green",
+			});
+		} else if (was_enabled) {
+			frappe.msgprint({
+				title: __("TSE Warning"),
+				message: __(
+					"Warning: Disabling TSE interrupts the continuous signing of receipts. Please confirm the warning before saving."
+				),
+				indicator: "orange",
 			});
 		} else {
 			frappe.msgprint({
@@ -103,6 +125,7 @@ frappe.ui.form.on("TSE Settings", {
 				indicator: "orange",
 			});
 		}
+		toggleDisableWarning(frm);
 		// The button will appear / disappear after the user saves and the form reloads
 	},
 });
