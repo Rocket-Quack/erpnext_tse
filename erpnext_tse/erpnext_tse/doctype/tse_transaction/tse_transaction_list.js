@@ -5,6 +5,7 @@
 	const DOCTYPE = "TSE Transaction";
 	const SETTINGS_DOCTYPE = "TSE Settings";
 	const SETTINGS_FLAG_FIELD = "recovery_sync_enabled";
+	const SETTINGS_ENABLED_FIELD = "enabled";
 
 	const RECOVERY_BTN_LABEL = __("Recovery Sync");
 	const RECOVERY_SUCCESS_MSG = __("Recovery sync queued.");
@@ -23,8 +24,11 @@
 
 	async function getRecoveryEnabled() {
 		try {
-			const v = await frappe.db.get_single_value(SETTINGS_DOCTYPE, SETTINGS_FLAG_FIELD);
-			return toInt(v) === 1;
+			const [recovery, enabled] = await Promise.all([
+				frappe.db.get_single_value(SETTINGS_DOCTYPE, SETTINGS_FLAG_FIELD),
+				frappe.db.get_single_value(SETTINGS_DOCTYPE, SETTINGS_ENABLED_FIELD),
+			]);
+			return toInt(recovery) === 1 && toInt(enabled) === 1;
 		} catch (e) {
 			return false;
 		}
