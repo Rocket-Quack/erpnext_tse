@@ -80,17 +80,18 @@ def test_tse_auth() -> dict[str, Any]:
 		# Auth-Fehler etc. -> kontrolliert zurückgeben
 		return {
 			"success": False,
-			"error_type": exc.__class__.__name__,
+			"error_type": "ValidationError",
 			"error_message": str(exc),
 			"last_auth_status": getattr(settings, "last_auth_status", None),
 			"last_auth_message": getattr(settings, "last_auth_message", None),
 		}
-	except Exception as exc:
+	except Exception:
 		# Fallback
+		frappe.log_error(frappe.get_traceback(), "TSE auth failed")
 		return {
 			"success": False,
-			"error_type": exc.__class__.__name__,
-			"error_message": str(exc),
+			"error_type": "Error",
+			"error_message": _("Authentication failed. Please check your settings."),
 			"last_auth_status": getattr(settings, "last_auth_status", None),
 			"last_auth_message": getattr(settings, "last_auth_message", None),
 		}
