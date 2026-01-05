@@ -651,11 +651,15 @@ class FiskalyProvider(BaseTSEProvider):
 	# High-Level: Transaction operations (SIGN DE upsertTransaction)
 	# ---------------------------------------------------------------------
 
-	def list_transactions(self, tss_id: str) -> dict[str, Any]:
-		"""Alle Transaktionen einer TSS abrufen (fuer spaetere Synchronisation)."""
+	def list_transactions(self, tss_id: str, **query_params) -> dict[str, Any]:
+		"""Alle Transaktionen einer TSS abrufen (fuer spaetere Synchronisation).
+
+		Unterstuetzt optionale Query-Parameter wie limit, offset, order_by, order.
+		"""
 		return self._request_json(
 			method="GET",
 			path=f"/tss/{tss_id}/tx",
+			params=query_params or None,
 		)
 
 	def get_transaction(self, tss_id: str, tx_id: str) -> dict[str, Any]:

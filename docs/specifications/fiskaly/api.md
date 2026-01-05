@@ -177,6 +177,7 @@ Recovery-Matching (Metadata Keys):
 List / Get:
 - `GET /tss/{tss_id}/tx`
 - `GET /tss/{tss_id}/tx/{tx_id}`
+  - Optional Query: `limit`, `offset`, `order_by`, `order` (Recovery nutzt `time_start` + `asc`).
 
 Upsert:
 - `PUT /tss/{tss_id}/tx/{tx_id}?tx_revision=<n>`
