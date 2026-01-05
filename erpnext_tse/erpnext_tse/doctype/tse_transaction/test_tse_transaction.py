@@ -7,6 +7,21 @@ from frappe.tests.utils import FrappeTestCase
 from erpnext_tse.erpnext_tse.doctype.tse_transaction import recovery
 
 
+class _FakeTxProvider:
+	def __init__(self, pages):
+		self.pages = pages
+		self.calls = []
+
+	def list_transactions(self, tss_id, **query_params):
+		self.calls.append({"tss_id": tss_id, **query_params})
+		limit = query_params.get("limit") or 100
+		offset = query_params.get("offset") or 0
+		page_index = offset // limit if limit else 0
+		if page_index < len(self.pages):
+			return self.pages[page_index]
+		return []
+
+
 class TestTSETransactionRecoveryHelpers(FrappeTestCase):
 	def test_normalize_status(self):
 		self.assertEqual(recovery._normalize_status("finished"), "FINISHED")
@@ -50,3 +65,30 @@ class TestTSETransactionRecoveryHelpers(FrappeTestCase):
 		self.assertIsNotNone(recovery._to_datetime(1710000000))
 		self.assertIsNotNone(recovery._to_datetime("1710000000"))
 		self.assertIsNone(recovery._to_datetime("not-a-date"))
+
+	def test_fetch_remote_transactions_paginates_and_dedupes(self):
+		pages = [
+			[{"_id": "tx-1"}, {"_id": "tx-2"}],
+			[{"_id": "tx-2"}, {"_id": "tx-3"}],
+		]
+		provider = _FakeTxProvider(pages)
+
+		items = recovery._fetch_remote_transactions(
+			provider,
+			tss_id="tss-1",
+			tss_docname="TSS-1",
+			tss_company="My Company",
+			page_size=2,
+		)
+
+		ids = [recovery._get_remote_id(item) for item in items]
+		self.assertEqual(ids, ["tx-1", "tx-2", "tx-3"])
+		for item in items:
+			self.assertEqual(item["__tss_docname"], "TSS-1")
+			self.assertEqual(item["__tss_company"], "My Company")
+
+		offsets = [call["offset"] for call in provider.calls]
+		self.assertIn(offsets, ([0, 2], [0, 2, 4]))
+		self.assertTrue(all(call["limit"] == 2 for call in provider.calls))
+		self.assertTrue(all(call["order_by"] == recovery.RECOVERY_ORDER_BY for call in provider.calls))
+		self.assertTrue(all(call["order"] == recovery.RECOVERY_ORDER for call in provider.calls))

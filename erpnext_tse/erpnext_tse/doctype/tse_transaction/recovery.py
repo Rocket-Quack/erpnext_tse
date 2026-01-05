@@ -18,6 +18,9 @@ TRANSACTION_STATE_MAP = {
 	"CANCELLED": "CANCELLED",
 	"CANCELED": "CANCELLED",
 }
+RECOVERY_PAGE_SIZE = 100
+RECOVERY_ORDER_BY = "time_start"
+RECOVERY_ORDER = "asc"
 
 
 # ---------------------------------------------------------------------------
@@ -121,6 +124,91 @@ def _normalize_tx_type(remote: dict[str, Any], schema: dict[str, Any] | None) ->
 	if receipt_type:
 		return receipt_type
 	return "UNKNOWN"
+
+
+def _parse_transaction_number(value: Any) -> int | None:
+	if value is None:
+		return None
+	if isinstance(value, int):
+		return value
+	if isinstance(value, float):
+		return int(value) if value.is_integer() else None
+	if isinstance(value, str):
+		stripped = value.strip()
+		if stripped.isdigit():
+			return int(stripped)
+	return None
+
+
+def _to_sortable_time(value: Any) -> float | None:
+	dt = _to_datetime(value)
+	if not dt:
+		return None
+	try:
+		return dt.timestamp()
+	except Exception:
+		return None
+
+
+def _remote_sort_key(remote: dict[str, Any]) -> tuple[Any, ...]:
+	tss_docname = _canonical_text(remote.get("__tss_docname")) or ""
+	time_val = _to_sortable_time(remote.get("time_start") or remote.get("timeStart"))
+	if time_val is None:
+		time_val = _to_sortable_time(remote.get("time_end") or remote.get("timeEnd"))
+	if time_val is None:
+		time_val = float("inf")
+	number_val = _parse_transaction_number(remote.get("number") or remote.get("transaction_number"))
+	if number_val is None:
+		number_val = float("inf")
+	remote_id = _canonical_id(_get_remote_id(remote)) or ""
+	return (tss_docname, time_val, number_val, remote_id)
+
+
+def _fetch_remote_transactions(
+	provider,
+	*,
+	tss_id: str,
+	tss_docname: str,
+	tss_company: str | None,
+	page_size: int = RECOVERY_PAGE_SIZE,
+) -> list[dict[str, Any]]:
+	items: list[dict[str, Any]] = []
+	seen_ids: set[str] = set()
+	offset = 0
+
+	while True:
+		raw = provider.list_transactions(
+			tss_id,
+			limit=page_size,
+			offset=offset,
+			order_by=RECOVERY_ORDER_BY,
+			order=RECOVERY_ORDER,
+		)
+		page_items = _extract_remote_list(raw)
+		if not page_items:
+			break
+
+		new_items = 0
+		for item in page_items:
+			item = dict(item)
+			remote_id = _canonical_id(_get_remote_id(item))
+			if remote_id:
+				if remote_id in seen_ids:
+					continue
+				seen_ids.add(remote_id)
+
+			item["__tss_docname"] = tss_docname
+			item["__tss_company"] = tss_company
+			items.append(item)
+			new_items += 1
+
+		if len(page_items) < page_size:
+			break
+		if new_items == 0:
+			break
+		offset += page_size
+
+	return items
 
 
 def _update_existing_from_remote(
@@ -326,12 +414,16 @@ def run_recovery_sync(user: str | None = None, **kwargs):
 			if device.tss_status == "ORPHANED":
 				continue
 			processed_devices.add(device.name)
-			items = _extract_remote_list(provider.list_transactions(device.tss_id))
-			for item in items:
-				item = dict(item)
-				item["__tss_docname"] = device.name
-				item["__tss_company"] = device.company
-				remote_items.append(item)
+			remote_items.extend(
+				_fetch_remote_transactions(
+					provider,
+					tss_id=device.tss_id,
+					tss_docname=device.name,
+					tss_company=device.company,
+				)
+			)
+
+		remote_items.sort(key=_remote_sort_key)
 
 		local_rows = frappe.get_all(
 			"TSE Transaction",

@@ -15,7 +15,8 @@ Der Recovery-Sync laedt alle Transaktionen je TSS bei Fiskaly, gleicht sie mit l
 4) Bei Abschluss erscheint ein Realtime-Hinweis: "Recovery sync completed successfully."  
 
 ## Was der Job macht
-- Ruft fuer jede lokale TSS (ausser ORPHANED) `GET /tss/{tss_id}/tx` ab.
+- Ruft fuer jede lokale TSS (ausser ORPHANED) `GET /tss/{tss_id}/tx` ab (paginiert).
+- Sortiert die Provider-Transaktionen je TSS nach `time_start` (aufsteigend) und `transaction_number`.
 - Matcht Provider-Transaktionen ueber `transaction_id`.
 - Aktualisiert bei Match u. a. Status, Revision, Nummer, Signaturzaehler, Zeiten, QR-Daten und `tse_security_device` sowie Client/Company-Link.
 - Legt fehlende Transaktionen lokal an und uebernimmt Provider-Status.
