@@ -32,7 +32,7 @@
    "hidden": 0,
    "is_query_report": 0,
    "label": "Transactions",
-   "link_count": 1,
+   "link_count": 2,
    "link_type": "DocType",
    "onboard": 0,
    "type": "Card Break"
@@ -43,6 +43,16 @@
    "label": "TSE Transaction",
    "link_count": 0,
    "link_to": "TSE Transaction",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "DSFinV-K Export",
+   "link_count": 0,
+   "link_to": "DSFinV-K Export",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"

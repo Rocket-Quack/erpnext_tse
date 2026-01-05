@@ -8,10 +8,14 @@ zugehoerigen DocTypes. Sie ist keine vollstaendige offizielle API-Referenz.
 - Core API Base URL (Default): `https://kassensichv-middleware.fiskaly.com/api/v2`
 - DSFinV-K Base URL (Default): `https://dsfinvk.fiskaly.com/api/v1`
 - Konfigurationsfelder in "TSE Settings":
-  - `api_key`, `api_secret` (Pflicht fuer Auth)
+  - `api_key`, `api_secret` (TSE Core Auth)
+  - `dsfinvk_api_key`, `dsfinvk_api_secret` (DSFinV-K Auth, optional)
   - `base_url`, `dsfinvk_base_url` (optional ueberschreiben)
+  - Hinweis: Fiskaly empfiehlt separate API Keys pro Dienst (TSE/DSFinV-K), daher getrennte Felder.
   - `access_token`, `refresh_token` + `*_expires_at` (nur intern, read-only)
   - `organization_id`, `token_environment`, `last_auth_*` (nur intern)
+  - `dsfinvk_access_token`, `dsfinvk_refresh_token` + `*_expires_at` (nur intern)
+  - `dsfinvk_organization_id`, `dsfinvk_token_environment`, `dsfinvk_last_auth_*` (nur intern)
   - `recovery_sync_enabled` (Recovery UI)
   - `enable_debug_logging` (nur fuer Debug)
 
@@ -27,11 +31,13 @@ Payload:
 ```
 
 Verhalten:
-- Access/Refresh Token werden in den TSE Settings gespeichert.
+- Access/Refresh Token werden in den TSE Settings gespeichert (TSE/DSFinV-K getrennt).
 - Token-Claims liefern `organization_id` und `env` (token_environment).
 - Bei 401 oder anderen 4xx/5xx wird der Fehler gecleart und `last_auth_*` gesetzt.
 - `ensure_valid_access_token()` re-authentifiziert automatisch, wenn das Token
   fehlt oder abgelaufen ist (Skew: 60s).
+- DSFinV-K Requests nutzen `dsfinvk_api_key`/`dsfinvk_api_secret`, falls gesetzt,
+  ansonsten die TSE Core Credentials.
 
 ## HTTP-Standardverhalten
 - Header:
@@ -45,7 +51,7 @@ Verhalten:
 - Non-JSON Responses werden als Fehler behandelt.
 
 ## Fachlicher Gesamtprozess (End-to-End)
-1) TSE Settings konfigurieren, `Test Auth` ausfuehren.
+1) TSE Settings konfigurieren, `Test TSE Auth` ausfuehren.
 2) TSE Security Device anlegen (TSS), Admin PUK sichern.
 3) TSS deployen (UNINITIALIZED) und initialisieren (INITIALIZED).
 4) TSE Client anlegen und beim Provider registrieren.
@@ -177,6 +183,7 @@ Recovery-Matching (Metadata Keys):
 List / Get:
 - `GET /tss/{tss_id}/tx`
 - `GET /tss/{tss_id}/tx/{tx_id}`
+  - Optional Query: `limit`, `offset`, `order_by`, `order` (Recovery nutzt `time_start` + `asc`).
 
 Upsert:
 - `PUT /tss/{tss_id}/tx/{tx_id}?tx_revision=<n>`

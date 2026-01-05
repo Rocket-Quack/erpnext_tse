@@ -38,22 +38,9 @@ class TSESettings(Document):
 		if self.enabled and not self.tse_provider:
 			frappe.throw(_("You must choose a TSE Provider before enabling the TSE integration."))
 
-		if self.enabled:
-			self.tse_disable_acknowledged = 0
-
-		previous = self.get_doc_before_save()
-		if previous and previous.enabled and not self.enabled:
-			if not getattr(self, "tse_disable_acknowledged", None):
-				frappe.throw(
-					_(
-						"Disabling TSE interrupts the continuous signing of receipts. "
-						'Please confirm the warning by checking "I understand this warning".'
-					)
-				)
-
 
 # -------------------------------------------------------------------------
-# Whitelisted API for the client script (Test Auth button)
+# Whitelisted API for the client script (Test TSE Auth button)
 # -------------------------------------------------------------------------
 
 
@@ -94,4 +81,41 @@ def test_tse_auth() -> dict[str, Any]:
 			"error_message": _("Authentication failed. Please check your settings."),
 			"last_auth_status": getattr(settings, "last_auth_status", None),
 			"last_auth_message": getattr(settings, "last_auth_message", None),
+		}
+
+
+@frappe.whitelist()
+def test_dsfinvk_auth() -> dict[str, Any]:
+	settings = frappe.get_single("TSE Settings")
+
+	if not getattr(settings, "enabled", None):
+		frappe.throw(_("TSE integration is disabled. Please enable it in TSE Settings before testing auth."))
+
+	provider = settings.get_provider()
+
+	try:
+		result = provider.test_dsfinvk_auth()
+		return {
+			"success": True,
+			"status": result.get("status"),
+			"environment": result.get("environment"),
+			"organization_id": result.get("organization_id"),
+			"access_token_expires_at": result.get("access_token_expires_at"),
+		}
+	except frappe.ValidationError as exc:
+		return {
+			"success": False,
+			"error_type": "ValidationError",
+			"error_message": str(exc),
+			"last_auth_status": getattr(settings, "dsfinvk_last_auth_status", None),
+			"last_auth_message": getattr(settings, "dsfinvk_last_auth_message", None),
+		}
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "DSFinV-K auth failed")
+		return {
+			"success": False,
+			"error_type": "Error",
+			"error_message": _("Authentication failed. Please check your settings."),
+			"last_auth_status": getattr(settings, "dsfinvk_last_auth_status", None),
+			"last_auth_message": getattr(settings, "dsfinvk_last_auth_message", None),
 		}

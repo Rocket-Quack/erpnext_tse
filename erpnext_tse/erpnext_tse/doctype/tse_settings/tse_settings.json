@@ -8,24 +8,30 @@
   "allgemein_tab",
   "sb_allgemein",
   "enabled",
-  "tse_disable_warning_html",
-  "tse_disable_acknowledged",
   "sb_cloud_provider",
   "tse_provider",
   "sb_zugangsdaten",
-  "environment",
   "base_url",
   "dsfinvk_base_url",
-  "sb_dsfinvk_export",
-  "dsfinvk_export_retention_days",
+  "sb_tse_credentials",
   "api_key",
   "api_secret",
+  "sb_dsfinvk_credentials",
+  "dsfinvk_api_key",
+  "dsfinvk_api_secret",
+  "sb_dsfinvk_export",
+  "dsfinvk_export_retention_days",
   "organisation_tab",
   "sb_fiskaly_organisation",
   "organization_id",
   "token_environment",
   "last_auth_at",
   "last_auth_base_url",
+  "sb_dsfinvk_organisation",
+  "dsfinvk_organization_id",
+  "dsfinvk_token_environment",
+  "dsfinvk_last_auth_at",
+  "dsfinvk_last_auth_base_url",
   "token_status_tab",
   "sb_token",
   "access_token",
@@ -35,6 +41,14 @@
   "sb_auth_status",
   "last_auth_status",
   "last_auth_message",
+  "sb_dsfinvk_token",
+  "dsfinvk_access_token",
+  "dsfinvk_access_token_expires_at",
+  "dsfinvk_refresh_token",
+  "dsfinvk_refresh_token_expires_at",
+  "sb_dsfinvk_auth_status",
+  "dsfinvk_last_auth_status",
+  "dsfinvk_last_auth_message",
   "recovery_tab",
   "recovery_sb",
   "recovery_sync_enabled",
@@ -48,17 +62,6 @@
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Activated"
-  },
-  {
-   "fieldname": "tse_disable_warning_html",
-   "fieldtype": "HTML",
-   "options": ""
-  },
-  {
-   "default": "0",
-   "fieldname": "tse_disable_acknowledged",
-   "fieldtype": "Check",
-   "label": "I understand this warning"
   },
   {
    "fieldname": "allgemein_tab",
@@ -100,6 +103,35 @@
    "read_only": 1
   },
   {
+   "fieldname": "sb_dsfinvk_organisation",
+   "fieldtype": "Section Break",
+   "label": "DSFinV-K Organization"
+  },
+  {
+   "fieldname": "dsfinvk_organization_id",
+   "fieldtype": "Data",
+   "label": "Organization ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "dsfinvk_token_environment",
+   "fieldtype": "Data",
+   "label": "Environment",
+   "read_only": 1
+  },
+  {
+   "fieldname": "dsfinvk_last_auth_at",
+   "fieldtype": "Datetime",
+   "label": "Last Auth At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "dsfinvk_last_auth_base_url",
+   "fieldtype": "Data",
+   "label": "Last Auth Base URL",
+   "read_only": 1
+  },
+  {
    "fieldname": "sb_allgemein",
    "fieldtype": "Section Break",
    "label": "General"
@@ -108,12 +140,6 @@
    "fieldname": "sb_zugangsdaten",
    "fieldtype": "Section Break",
    "label": "Login details"
-  },
-  {
-   "fieldname": "environment",
-   "fieldtype": "Select",
-   "label": "Environment",
-   "options": "TEST\nLIVE"
   },
   {
    "description": "Optional. Overrides default https://kassensichv-middleware.fiskaly.com/api/v2",
@@ -128,6 +154,36 @@
    "label": "DSFinV-K Base URL"
   },
   {
+   "fieldname": "sb_tse_credentials",
+   "fieldtype": "Section Break",
+   "label": "TSE Credentials"
+  },
+  {
+   "fieldname": "api_key",
+   "fieldtype": "Password",
+   "label": "TSE API Key"
+  },
+  {
+   "fieldname": "api_secret",
+   "fieldtype": "Password",
+   "label": "TSE API Secret"
+  },
+  {
+   "fieldname": "sb_dsfinvk_credentials",
+   "fieldtype": "Section Break",
+   "label": "DSFinV-K Credentials"
+  },
+  {
+   "fieldname": "dsfinvk_api_key",
+   "fieldtype": "Password",
+   "label": "DSFinV-K API Key"
+  },
+  {
+   "fieldname": "dsfinvk_api_secret",
+   "fieldtype": "Password",
+   "label": "DSFinV-K API Secret"
+  },
+  {
    "fieldname": "sb_dsfinvk_export",
    "fieldtype": "Section Break",
    "label": "DSFinV-K Export"
@@ -140,16 +196,6 @@
    "label": "Export Retention (Days)"
   },
   {
-   "fieldname": "api_key",
-   "fieldtype": "Password",
-   "label": "API Key"
-  },
-  {
-   "fieldname": "api_secret",
-   "fieldtype": "Password",
-   "label": "API Secret"
-  },
-  {
    "fieldname": "token_status_tab",
    "fieldtype": "Tab Break",
    "label": "Token Status"
@@ -157,47 +203,93 @@
   {
    "fieldname": "sb_token",
    "fieldtype": "Section Break",
-   "label": "Token"
+   "label": "TSE Token"
   },
   {
    "fieldname": "access_token",
    "fieldtype": "Password",
-   "label": "Access Token",
+   "label": "TSE Access Token",
    "read_only": 1
   },
   {
    "fieldname": "access_token_expires_at",
    "fieldtype": "Datetime",
-   "label": "Access Token Expires At",
+   "label": "TSE Access Token Expires At",
    "read_only": 1
   },
   {
    "fieldname": "refresh_token",
    "fieldtype": "Password",
-   "label": "Refresh Token",
+   "label": "TSE Refresh Token",
    "read_only": 1
   },
   {
    "fieldname": "refresh_token_expires_at",
    "fieldtype": "Datetime",
-   "label": "Refresh Token Expires At",
+   "label": "TSE Refresh Token Expires At",
    "read_only": 1
   },
   {
    "fieldname": "sb_auth_status",
    "fieldtype": "Section Break",
-   "label": "Status"
+   "label": "TSE Auth Status"
   },
   {
    "fieldname": "last_auth_status",
    "fieldtype": "Data",
-   "label": "Last Auth Status",
+   "label": "TSE Last Auth Status",
    "read_only": 1
   },
   {
    "fieldname": "last_auth_message",
    "fieldtype": "Small Text",
-   "label": "Last Auth Message",
+   "label": "TSE Last Auth Message",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sb_dsfinvk_token",
+   "fieldtype": "Section Break",
+   "label": "DSFinV-K Token"
+  },
+  {
+   "fieldname": "dsfinvk_access_token",
+   "fieldtype": "Password",
+   "label": "DSFinV-K Access Token",
+   "read_only": 1
+  },
+  {
+   "fieldname": "dsfinvk_access_token_expires_at",
+   "fieldtype": "Datetime",
+   "label": "DSFinV-K Access Token Expires At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "dsfinvk_refresh_token",
+   "fieldtype": "Password",
+   "label": "DSFinV-K Refresh Token",
+   "read_only": 1
+  },
+  {
+   "fieldname": "dsfinvk_refresh_token_expires_at",
+   "fieldtype": "Datetime",
+   "label": "DSFinV-K Refresh Token Expires At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sb_dsfinvk_auth_status",
+   "fieldtype": "Section Break",
+   "label": "DSFinV-K Auth Status"
+  },
+  {
+   "fieldname": "dsfinvk_last_auth_status",
+   "fieldtype": "Data",
+   "label": "DSFinV-K Last Auth Status",
+   "read_only": 1
+  },
+  {
+   "fieldname": "dsfinvk_last_auth_message",
+   "fieldtype": "Small Text",
+   "label": "DSFinV-K Last Auth Message",
    "read_only": 1
   },
   {
