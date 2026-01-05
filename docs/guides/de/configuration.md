@@ -11,22 +11,26 @@ Diese Anleitung beschreibt die erste Konfiguration der TSE-App und eine Uebersic
 
 - ERPNext TSE ist installiert.
 - Du hast die Rolle **TSE Admin** oder **System Manager**.
-- Ein aktiver **fiskaly-Account** mit API Key und API Secret ist vorhanden.
+- Ein aktiver **fiskaly-Account** mit TSE API Key/Secret (und optional DSFinV-K API Key/Secret) ist vorhanden.
 
 ## 1. TSE Settings einrichten
 
 1. Oeffne **TSE Settings** (Suche in der ERPNext Leiste).
 2. Aktiviere **Activated**.
 3. Waehle **Cloud Provider = Fiskaly**.
-4. Setze **Environment** auf `TEST` (Einrichtung) oder `LIVE` (Produktivbetrieb).
-5. Optional: Passe **Base URL** und **DSFinV-K Base URL** an, wenn du eigene Endpunkte nutzt.
-6. Trage **API Key** und **API Secret** ein.
+4. Optional: Passe **Base URL** und **DSFinV-K Base URL** an, wenn du eigene Endpunkte nutzt.
+5. Trage **TSE API Key** und **TSE API Secret** ein.
+6. Optional: Trage **DSFinV-K API Key** und **DSFinV-K API Secret** ein, falls abweichend.
 7. Speichere den Datensatz.
 
-Nach dem Speichern erscheint der Button **Test Auth**. Damit pruefst du die Verbindung zu fiskaly und siehst:
+Hinweis: Fiskaly empfiehlt, pro Dienst (TSE und DSFinV-K) eigene API Keys zu verwenden. Daher sind die Zugangsdaten getrennt.
+
+Nach dem Speichern erscheint der Button **Test TSE Auth**. Damit pruefst du die Verbindung zu fiskaly und siehst:
 - **Organization ID**
 - **Access Token Expires At**
 - **Last Auth Status** und **Last Auth Message**
+
+Optional kannst du **Test DSFinV-K Auth** nutzen, um die DSFinV-K Zugangsdaten separat zu pruefen.
 
 ![DSFinV-K Settings in TSE Settings](/docs/assets/DSFinV-K-Settings/DSFinV-K_SETTINGS.png)
 
@@ -71,6 +75,7 @@ Ordne jedem Steuerkonto (Account Type = Tax) einen **VAT Rate Code** zu. Standar
 ## 5. DSFinV-K Einstellungen
 
 - **DSFinV-K Base URL** (optional) in den TSE Settings.
+- **DSFinV-K API Key/Secret** (optional, falls abweichend von TSE).
 - **Export Retention (Days)** steuert, wie lange heruntergeladene Exporte gespeichert bleiben.
 - **DSFinV-K VAT Rate**: Tax Account -> VAT Definition ID.
 - **DSFinV-K Payment Type**: Mode of Payment -> Payment Type (z. B. Bar, Unbar, ECKarte).

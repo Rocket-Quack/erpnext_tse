@@ -94,3 +94,40 @@ class TestTSESettings(FrappeTestCase):
 		self.assertFalse(result["success"])
 		self.assertEqual(result["error_type"], "Error")
 		self.assertEqual(result["error_message"], "Authentication failed. Please check your settings.")
+
+	def test_test_dsfinvk_auth_success(self):
+		self.settings.enabled = 1
+		self.settings.tse_provider = self.settings.tse_provider or "Fiskaly"
+		self.settings.save(ignore_permissions=True)
+
+		provider = Mock()
+		provider.test_dsfinvk_auth.return_value = {
+			"status": "OK",
+			"environment": "test",
+			"organization_id": "org",
+			"access_token_expires_at": 123,
+		}
+
+		with patch.object(tse_settings.TSESettings, "get_provider", return_value=provider):
+			result = tse_settings.test_dsfinvk_auth()
+
+		self.assertTrue(result["success"])
+		self.assertEqual(result["status"], "OK")
+		self.assertEqual(result["environment"], "test")
+		self.assertEqual(result["organization_id"], "org")
+
+	def test_test_dsfinvk_auth_handles_validation_error(self):
+		self.settings.enabled = 1
+		self.settings.tse_provider = self.settings.tse_provider or "Fiskaly"
+		self.settings.save(ignore_permissions=True)
+
+		class ErrorProvider:
+			def test_dsfinvk_auth(self):
+				raise frappe.ValidationError("bad")
+
+		with patch.object(tse_settings.TSESettings, "get_provider", return_value=ErrorProvider()):
+			result = tse_settings.test_dsfinvk_auth()
+
+		self.assertFalse(result["success"])
+		self.assertEqual(result["error_type"], "ValidationError")
+		self.assertIn("bad", result["error_message"])

@@ -34,7 +34,7 @@ Diese Anleitung beschreibt die Nutzung der TSE App im Betrieb und wie signierte 
 
 - Fehlende Zuordnung der **TSE Payment Types** (Mode of Payment -> CASH/NON_CASH).
 - Fehlende Zuordnung der **TSE VAT Rates** zu Steuerkonten.
-- Ungueltige oder abgelaufene fiskaly Tokens (Test Auth in den TSE Settings).
+- Ungueltige oder abgelaufene fiskaly Tokens (Test TSE Auth in den TSE Settings).
 
 ## Tagesabschluss und DSFinV-K
 
