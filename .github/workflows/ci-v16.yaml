@@ -5,11 +5,9 @@ on:
   push:
     branches:
       - version-16
-      - version-16-develop
   pull_request:
     branches:
       - version-16
-      - version-16-develop
 
 concurrency:
   group: develop-erpnext_tse-${{ github.event.number }}
