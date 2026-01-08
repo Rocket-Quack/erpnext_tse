@@ -7,6 +7,7 @@ from typing import Any
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.utils import cint
 
 from erpnext_tse.erpnext_tse.tss_providers import get_tse_provider
 
@@ -50,7 +51,7 @@ class TSETransaction(Document):
 
 	def ensure_tse_enabled(self):
 		settings = frappe.get_single("TSE Settings")
-		if not getattr(settings, "enabled", None):
+		if not cint(getattr(settings, "enabled", None)):
 			frappe.throw(
 				_(
 					"TSE functionality is not enabled in TSE Settings. "
@@ -304,6 +305,9 @@ def create_tse_transaction_for_pos_invoice(doc, method: str | None = None):
 
 	# 2. Check ob wirklich POS Invoice
 	if doc.doctype != "POS Invoice":
+		return
+
+	if not cint(frappe.db.get_single_value("TSE Settings", "enabled")):
 		return
 
 	# 3. POS Profile holen

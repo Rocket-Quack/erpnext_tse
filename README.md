@@ -69,7 +69,7 @@ signierte POS-Transaktion moeglich.
 - `Environment` waehlen: **TEST** fuer erste Tests, **LIVE** fuer Produktion.
 - `API Key` und `API Secret` aus dem fiskaly Dashboard eintragen.
 - `Base URL` und `DSFinV-K Base URL` nur anpassen, falls bewusst abweichend.
-- `Activated` aktivieren, speichern und danach ueber **Test Auth** die Verbindung pruefen.
+- `Activated` aktivieren, speichern und danach ueber **Test TSE Auth** die Verbindung pruefen.
 - Pruefen, ob `Organization ID`, Token-Status und Environment gesetzt werden.
 
 #### **Steuer- und Zahlungsarten mappen**

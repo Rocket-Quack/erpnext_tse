@@ -17,6 +17,9 @@ from .base import BaseTSEProvider
 
 logger = logging.getLogger("erpnext_tse.fiskaly")
 
+TOKEN_SCOPE_TSE = "tse"
+TOKEN_SCOPE_DSFINVK = "dsfinvk"
+
 
 class FiskalyProvider(BaseTSEProvider):
 	"""Implementation of the TSE provider interface for Fiskaly SIGN DE."""
@@ -57,30 +60,61 @@ class FiskalyProvider(BaseTSEProvider):
 		api_secret = self.doc.get_password("api_secret")
 
 		if not api_key or not api_secret:
-			frappe.throw(_("Please enter API Key and API Secret in TSE Settings."))
+			frappe.throw(_("Please enter TSE API Key and API Secret in TSE Settings."))
 
 		return api_key, api_secret
 
+	def get_dsfinvk_api_credentials(self) -> tuple[str, str]:
+		api_key = self.doc.get_password("dsfinvk_api_key")
+		api_secret = self.doc.get_password("dsfinvk_api_secret")
+
+		if api_key or api_secret:
+			if not api_key or not api_secret:
+				frappe.throw(_("Please enter DSFinV-K API Key and API Secret in TSE Settings."))
+			return api_key, api_secret
+
+		return self.get_api_credentials()
+
 	# --- token helpers ---------------------------------------------------
 
-	def _clear_token_fields(self):
+	def _token_field(self, scope: str, base: str) -> str:
+		if scope == TOKEN_SCOPE_TSE:
+			return base
+		if scope == TOKEN_SCOPE_DSFINVK:
+			return f"dsfinvk_{base}"
+		raise ValueError(f"Unsupported token scope: {scope}")
+
+	def _get_password_field(self, scope: str, base: str) -> str | None:
+		fieldname = self._token_field(scope, base)
+		return self.doc.get_password(fieldname) or None
+
+	def _get_field(self, scope: str, base: str) -> Any:
+		return getattr(self.doc, self._token_field(scope, base), None)
+
+	def _set_field(self, scope: str, base: str, value: Any):
+		setattr(self.doc, self._token_field(scope, base), value)
+
+	def _clear_token_fields(self, scope: str = TOKEN_SCOPE_TSE):
 		"""Clear all token-related fields when authentication is no longer valid."""
-		self.doc.access_token = None
-		self.doc.access_token_expires_at = None
-		self.doc.refresh_token = None
-		self.doc.refresh_token_expires_at = None
-		self.doc.organization_id = None
-		self.doc.token_environment = None
+		for field in (
+			"access_token",
+			"access_token_expires_at",
+			"refresh_token",
+			"refresh_token_expires_at",
+			"organization_id",
+			"token_environment",
+		):
+			self._set_field(scope, field, None)
 
-	def get_access_token(self) -> str | None:
-		return self.doc.get_password("access_token") or None
+	def get_access_token(self, scope: str = TOKEN_SCOPE_TSE) -> str | None:
+		return self._get_password_field(scope, "access_token")
 
-	def get_refresh_token(self) -> str | None:
-		return self.doc.get_password("refresh_token") or None
+	def get_refresh_token(self, scope: str = TOKEN_SCOPE_TSE) -> str | None:
+		return self._get_password_field(scope, "refresh_token")
 
-	def is_access_token_valid(self, skew_seconds: int = 60) -> bool:
-		token = self.get_access_token()
-		expires_at = self.doc.access_token_expires_at
+	def is_access_token_valid(self, scope: str = TOKEN_SCOPE_TSE, skew_seconds: int = 60) -> bool:
+		token = self.get_access_token(scope=scope)
+		expires_at = self._get_field(scope, "access_token_expires_at")
 
 		if not token or not expires_at:
 			return False
@@ -91,18 +125,23 @@ class FiskalyProvider(BaseTSEProvider):
 		delta = (expires_dt - now_datetime()).total_seconds()
 		return delta > skew_seconds
 
-	def ensure_valid_access_token(self) -> str:
+	def ensure_valid_access_token(
+		self,
+		api_key: str | None = None,
+		api_secret: str | None = None,
+		scope: str = TOKEN_SCOPE_TSE,
+	) -> str:
 		"""Return a valid access token, refreshing it if necessary."""
-		if self.is_access_token_valid():
-			token = self.get_access_token()
+		if self.is_access_token_valid(scope=scope):
+			token = self.get_access_token(scope=scope)
 			if token:
 				return token
 
 		# Token fehlt oder abgelaufen → neu authentifizieren
-		data = self.run_auth_request()
-		self.update_from_auth_response(data)
+		data = self.run_auth_request(api_key=api_key, api_secret=api_secret, scope=scope)
+		self.update_from_auth_response(data, scope=scope)
 
-		token = self.get_access_token()
+		token = self.get_access_token(scope=scope)
 		if not token:
 			frappe.throw(_("Could not obtain a valid access token from Fiskaly."))
 		return token
@@ -134,7 +173,13 @@ class FiskalyProvider(BaseTSEProvider):
 			"message": data.get("message") or "",
 		}
 
-	def _store_auth_error(self, status: str, error_code: str | None, message: str):
+	def _store_auth_error(
+		self,
+		status: str,
+		error_code: str | None,
+		message: str,
+		scope: str = TOKEN_SCOPE_TSE,
+	):
 		details = f"code={error_code}, message={message}" if error_code else message
 
 		self._log(
@@ -146,9 +191,9 @@ class FiskalyProvider(BaseTSEProvider):
 			docname=self.doc.name,
 		)
 
-		self.doc.last_auth_status = status
-		self.doc.last_auth_message = details
-		self.doc.last_auth_at = now_datetime()
+		self._set_field(scope, "last_auth_status", status)
+		self._set_field(scope, "last_auth_message", details)
+		self._set_field(scope, "last_auth_at", now_datetime())
 		self.doc.save(ignore_permissions=True)
 		frappe.db.commit()
 
@@ -156,9 +201,15 @@ class FiskalyProvider(BaseTSEProvider):
 	# Auth flow
 	# ---------------------------------------------------------------------
 
-	def run_auth_request(self) -> dict:
+	def run_auth_request(
+		self,
+		api_key: str | None = None,
+		api_secret: str | None = None,
+		scope: str = TOKEN_SCOPE_TSE,
+	) -> dict:
 		base_url = self.get_base_url()
-		api_key, api_secret = self.get_api_credentials()
+		if api_key is None or api_secret is None:
+			api_key, api_secret = self.get_api_credentials()
 		url = f"{base_url}/auth"
 
 		self._log(
@@ -187,6 +238,7 @@ class FiskalyProvider(BaseTSEProvider):
 				status="NETWORK_ERROR",
 				error_code="E_NETWORK_ERROR",
 				message=str(exc),
+				scope=scope,
 			)
 			frappe.throw(_("Could not reach Fiskaly auth endpoint: {0}").format(exc))
 
@@ -206,11 +258,12 @@ class FiskalyProvider(BaseTSEProvider):
 		# 401 → Credentials falsch / Token invalide
 		if response.status_code == 401:
 			err = self._parse_error_response(response)
-			self._clear_token_fields()
+			self._clear_token_fields(scope=scope)
 			self._store_auth_error(
 				status="401_UNAUTHORIZED",
 				error_code=err.get("code"),
 				message=err.get("message") or err.get("error") or "Unauthorized",
+				scope=scope,
 			)
 			frappe.throw(
 				_("Authentication failed (401). Error code: {0}, message: {1}").format(
@@ -220,11 +273,12 @@ class FiskalyProvider(BaseTSEProvider):
 
 		if 400 <= response.status_code < 500:
 			err = self._parse_error_response(response)
-			self._clear_token_fields()
+			self._clear_token_fields(scope=scope)
 			self._store_auth_error(
 				status=f"{response.status_code}_CLIENT_ERROR",
 				error_code=err.get("code"),
 				message=err.get("message") or err.get("error") or "Client error",
+				scope=scope,
 			)
 			frappe.throw(
 				_("Fiskaly returned a client error ({0}). Error code: {1}, message: {2}").format(
@@ -240,6 +294,7 @@ class FiskalyProvider(BaseTSEProvider):
 				status=f"{response.status_code}_SERVER_ERROR",
 				error_code=err.get("code"),
 				message=err.get("message") or err.get("error") or "Server error",
+				scope=scope,
 			)
 			frappe.throw(
 				_(
@@ -260,12 +315,13 @@ class FiskalyProvider(BaseTSEProvider):
 				status="PARSE_ERROR",
 				error_code="E_INVALID_JSON",
 				message=f"Could not parse JSON response: {exc}",
+				scope=scope,
 			)
 			frappe.throw(_("Could not parse Fiskaly auth response as JSON: {0}").format(exc))
 
 		return data
 
-	def update_from_auth_response(self, data: dict) -> dict:
+	def update_from_auth_response(self, data: dict, scope: str = TOKEN_SCOPE_TSE) -> dict:
 		self._log(
 			logging.INFO,
 			"Updating TSESettings from auth response",
@@ -284,11 +340,12 @@ class FiskalyProvider(BaseTSEProvider):
 				error_message=msg,
 			)
 
-			self._clear_token_fields()
+			self._clear_token_fields(scope=scope)
 			self._store_auth_error(
 				status="AUTH_ERROR",
 				error_code=err_code,
 				message=msg,
+				scope=scope,
 			)
 			frappe.throw(
 				_("Authentication failed. Error code: {0}, message: {1}").format(err_code or "N/A", msg)
@@ -297,25 +354,27 @@ class FiskalyProvider(BaseTSEProvider):
 		claims = data.get("access_token_claims") or {}
 
 		# Token values (Password fields on doc)
-		self.doc.access_token = data.get("access_token")
-		self.doc.refresh_token = data.get("refresh_token")
+		self._set_field(scope, "access_token", data.get("access_token"))
+		self._set_field(scope, "refresh_token", data.get("refresh_token"))
 
 		access_exp = data.get("access_token_expires_at")
 		refresh_exp = data.get("refresh_token_expires_at")
 
 		if access_exp:
-			self.doc.access_token_expires_at = datetime.fromtimestamp(access_exp)
+			self._set_field(scope, "access_token_expires_at", datetime.fromtimestamp(access_exp))
 		if refresh_exp:
-			self.doc.refresh_token_expires_at = datetime.fromtimestamp(refresh_exp)
+			self._set_field(scope, "refresh_token_expires_at", datetime.fromtimestamp(refresh_exp))
 
-		self.doc.organization_id = claims.get("organization_id")
-		self.doc.token_environment = claims.get("env")
+		self._set_field(scope, "organization_id", claims.get("organization_id"))
+		self._set_field(scope, "token_environment", claims.get("env"))
 
-		self.doc.last_auth_at = now_datetime()
-		self.doc.last_auth_base_url = self.get_base_url()
-		self.doc.last_auth_status = "OK"
-		self.doc.last_auth_message = (
-			f"env={claims.get('env')}, organization_id={claims.get('organization_id')}"
+		self._set_field(scope, "last_auth_at", now_datetime())
+		self._set_field(scope, "last_auth_base_url", self.get_base_url())
+		self._set_field(scope, "last_auth_status", "OK")
+		self._set_field(
+			scope,
+			"last_auth_message",
+			f"env={claims.get('env')}, organization_id={claims.get('organization_id')}",
 		)
 
 		self.doc.save(ignore_permissions=True)
@@ -367,23 +426,34 @@ class FiskalyProvider(BaseTSEProvider):
 	def test_auth(self) -> dict[str, Any]:
 		"""Force a fresh /auth call and overwrite all token fields.
 
-		This is used by the 'Test Auth' button in the UI.
+		This is used by the 'Test TSE Auth' button in the UI.
 		"""
 		# Alte Tokens im DocTyp entfernen
-		self._clear_token_fields()
+		self._clear_token_fields(scope=TOKEN_SCOPE_TSE)
 
 		# /auth gegen Schnittstelle von Fiskaly
-		data = self.run_auth_request()
+		data = self.run_auth_request(scope=TOKEN_SCOPE_TSE)
 
 		# Antwort in den TSE Settings speichern (Access/Refresh Token, Expiry, Org-ID, etc.)
-		return self.update_from_auth_response(data)
+		return self.update_from_auth_response(data, scope=TOKEN_SCOPE_TSE)
+
+	def test_dsfinvk_auth(self) -> dict[str, Any]:
+		"""Force a fresh /auth call for DSFinV-K credentials."""
+		self._clear_token_fields(scope=TOKEN_SCOPE_DSFINVK)
+		api_key, api_secret = self.get_dsfinvk_api_credentials()
+		data = self.run_auth_request(
+			api_key=api_key,
+			api_secret=api_secret,
+			scope=TOKEN_SCOPE_DSFINVK,
+		)
+		return self.update_from_auth_response(data, scope=TOKEN_SCOPE_DSFINVK)
 
 	def request(self, method: str, path: str, **kwargs) -> requests.Response:
 		"""Generic API call using bearer token + 401-retry (core API)."""
 		base_url = self.get_base_url()
 		url = f"{base_url.rstrip('/')}/{path.lstrip('/')}"
 
-		token = self.ensure_valid_access_token()
+		token = self.ensure_valid_access_token(scope=TOKEN_SCOPE_TSE)
 
 		headers = kwargs.pop("headers", {}) or {}
 		headers.setdefault("Authorization", f"Bearer {token}")
@@ -408,9 +478,9 @@ class FiskalyProvider(BaseTSEProvider):
 			url=url,
 		)
 
-		data = self.run_auth_request()
-		self.update_from_auth_response(data)
-		token = self.ensure_valid_access_token()
+		data = self.run_auth_request(scope=TOKEN_SCOPE_TSE)
+		self.update_from_auth_response(data, scope=TOKEN_SCOPE_TSE)
+		token = self.ensure_valid_access_token(scope=TOKEN_SCOPE_TSE)
 
 		headers["Authorization"] = f"Bearer {token}"
 		return requests.request(method, url, headers=headers, timeout=15, **kwargs)
@@ -420,7 +490,12 @@ class FiskalyProvider(BaseTSEProvider):
 		base_url = self.get_dsfinvk_base_url()
 		url = f"{base_url.rstrip('/')}/{path.lstrip('/')}"
 
-		token = self.ensure_valid_access_token()
+		api_key, api_secret = self.get_dsfinvk_api_credentials()
+		token = self.ensure_valid_access_token(
+			api_key=api_key,
+			api_secret=api_secret,
+			scope=TOKEN_SCOPE_DSFINVK,
+		)
 
 		headers = kwargs.pop("headers", {}) or {}
 		headers.setdefault("Authorization", f"Bearer {token}")
@@ -431,9 +506,17 @@ class FiskalyProvider(BaseTSEProvider):
 			return resp
 
 		# 401 -> re-auth einmal und Retry
-		data = self.run_auth_request()
-		self.update_from_auth_response(data)
-		token = self.ensure_valid_access_token()
+		data = self.run_auth_request(
+			api_key=api_key,
+			api_secret=api_secret,
+			scope=TOKEN_SCOPE_DSFINVK,
+		)
+		self.update_from_auth_response(data, scope=TOKEN_SCOPE_DSFINVK)
+		token = self.ensure_valid_access_token(
+			api_key=api_key,
+			api_secret=api_secret,
+			scope=TOKEN_SCOPE_DSFINVK,
+		)
 
 		headers["Authorization"] = f"Bearer {token}"
 		return requests.request(method, url, headers=headers, timeout=30, **kwargs)
@@ -651,11 +734,15 @@ class FiskalyProvider(BaseTSEProvider):
 	# High-Level: Transaction operations (SIGN DE upsertTransaction)
 	# ---------------------------------------------------------------------
 
-	def list_transactions(self, tss_id: str) -> dict[str, Any]:
-		"""Alle Transaktionen einer TSS abrufen (fuer spaetere Synchronisation)."""
+	def list_transactions(self, tss_id: str, **query_params) -> dict[str, Any]:
+		"""Alle Transaktionen einer TSS abrufen (fuer spaetere Synchronisation).
+
+		Unterstuetzt optionale Query-Parameter wie limit, offset, order_by, order.
+		"""
 		return self._request_json(
 			method="GET",
 			path=f"/tss/{tss_id}/tx",
+			params=query_params or None,
 		)
 
 	def get_transaction(self, tss_id: str, tx_id: str) -> dict[str, Any]:

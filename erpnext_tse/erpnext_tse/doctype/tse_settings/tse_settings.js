@@ -21,15 +21,15 @@ frappe.ui.form.on("TSE Settings", {
 
 		// Only show the button when the document is saved AND TSE is enabled
 		if (!frm.is_new() && frm.doc.enabled) {
-			frm.add_custom_button(__("Test Auth"), () => {
+			frm.add_custom_button(__("Test TSE Auth"), () => {
 				if (debug) {
-					console.log("[TSE Settings] Test Auth button clicked");
+					console.log("[TSE Settings] Test TSE Auth button clicked");
 				}
 
 				frappe.call({
 					method: "erpnext_tse.erpnext_tse.doctype.tse_settings.tse_settings.test_tse_auth",
 					freeze: true,
-					freeze_message: __("Testing connection to TSE provider..."),
+					freeze_message: __("Testing TSE connection..."),
 					callback(r) {
 						const data = r.message || {};
 
@@ -66,7 +66,7 @@ frappe.ui.form.on("TSE Settings", {
                                 <p><b>${__("Organization ID")}:</b> ${
 								data.organization_id || "-"
 							}</p>
-                                <p><b>${__("Access Token Expires At")}:</b> ${
+                                <p><b>${__("TSE Access Token Expires At")}:</b> ${
 								data.access_token_expires_at || "-"
 							}</p>
                             `,
@@ -79,15 +79,108 @@ frappe.ui.form.on("TSE Settings", {
 					},
 				});
 			});
+
+			frm.add_custom_button(__("Test DSFinV-K Auth"), () => {
+				if (debug) {
+					console.log("[TSE Settings] Test DSFinV-K Auth button clicked");
+				}
+
+				frappe.call({
+					method: "erpnext_tse.erpnext_tse.doctype.tse_settings.tse_settings.test_dsfinvk_auth",
+					freeze: true,
+					freeze_message: __("Testing DSFinV-K connection..."),
+					callback(r) {
+						const data = r.message || {};
+
+						if (debug) {
+							console.log("[TSE Settings] test_dsfinvk_auth raw response:", r);
+						}
+
+						if (!data.success) {
+							if (debug) {
+								console.warn("[TSE Settings] DSFinV-K auth test failed:", data);
+							}
+
+							frappe.msgprint({
+								title: __("DSFinV-K Auth Failed"),
+								message:
+									data.error_message ||
+									data.last_auth_message ||
+									__("Authentication failed. Please check your settings."),
+								indicator: "red",
+							});
+
+							frm.reload_doc();
+							return;
+						}
+
+						frappe.msgprint({
+							title: __("DSFinV-K Auth Result"),
+							message: `
+                                <p><b>${__("Status")}:</b> ${data.status || "-"}</p>
+                                <p><b>${__("Environment")}:</b> ${data.environment || "-"}</p>
+                                <p><b>${__("Organization ID")}:</b> ${
+								data.organization_id || "-"
+							}</p>
+                                <p><b>${__("DSFinV-K Access Token Expires At")}:</b> ${
+								data.access_token_expires_at || "-"
+							}</p>
+                            `,
+							indicator: "green",
+						});
+
+						frm.reload_doc();
+					},
+				});
+			});
+		}
+		if (frm._tse_was_enabled === undefined) {
+			frm._tse_was_enabled = !!frm.doc.enabled;
 		}
 	},
 
 	// Triggered when the "enabled" checkbox is toggled
 	enabled(frm) {
+		if (frm._tse_skip_disable_confirm) {
+			frm._tse_skip_disable_confirm = false;
+			return;
+		}
+
 		const debug = !!frm.doc.enable_debug_logging;
 
 		if (debug) {
 			console.log("[TSE Settings] enabled changed:", frm.doc.enabled);
+		}
+
+		const was_enabled = !!frm._tse_was_enabled;
+
+		if (!frm.doc.enabled && was_enabled) {
+			const disable_title = __("Disable TSE integration?");
+			const disable_intro = __("You are about to disable TSE integration.");
+			const disable_warning = __(
+				"Disabling stops continuous signing of receipts and can create gaps in the signature chain."
+			);
+			const disable_confirm = __("Only proceed if you understand the compliance impact.");
+
+			frappe.confirm(
+				`<p><b>${disable_intro}</b></p><p>${disable_warning}</p><p>${disable_confirm}</p>`,
+				() => {
+					frappe.msgprint({
+						title: __("TSE Disabled"),
+						message: __(
+							"TSE integration has been disabled. Please save to apply changes."
+						),
+						indicator: "orange",
+					});
+				},
+				() => {
+					frm._tse_skip_disable_confirm = true;
+					frm.set_value("enabled", 1);
+				},
+				__("Disable TSE"),
+				disable_title
+			);
+			return;
 		}
 
 		if (frm.doc.enabled) {

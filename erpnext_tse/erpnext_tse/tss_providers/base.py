@@ -22,7 +22,12 @@ class BaseTSEProvider(ABC):
 		raise NotImplementedError
 
 	@abstractmethod
-	def ensure_valid_access_token(self) -> str:
+	def ensure_valid_access_token(
+		self,
+		api_key: str | None = None,
+		api_secret: str | None = None,
+		scope: str | None = None,
+	) -> str:
 		"""Return a valid access token, refreshing it if necessary."""
 		raise NotImplementedError
 

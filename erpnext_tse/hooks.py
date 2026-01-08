@@ -10,6 +10,56 @@ app_license = "gpl-3.0"
 
 required_apps = ["erpnext"]
 
+fixtures = [
+	{
+		"doctype": "Workspace",
+		"filters": [
+			["name", "in", ["TSE"]],
+		],
+	},
+	{
+		"doctype": "Number Card",
+		"filters": [
+			["name", "in", ["TSE Clients", "TSE Security Device", "TSE Transactions"]],
+		],
+	},
+	{
+		"doctype": "Dashboard Chart",
+		"filters": [
+			["name", "in", ["TSE Transactions"]],
+		],
+	},
+	{
+		"doctype": "Module Onboarding",
+		"filters": [
+			["name", "in", ["TSE Setup"]],
+		],
+	},
+	{
+		"doctype": "Onboarding Step",
+		"filters": [
+			[
+				"name",
+				"in",
+				[
+					"POS Profile zu TSE Client zuweisen",
+					"TSE Client anlegen",
+					"TSE Einstellungen konfigurieren",
+					"TSE Payment Type Configuration",
+					"TSE Security Device anlegen",
+					"TSE VAT Configuration",
+				],
+			],
+		],
+	},
+	{
+		"doctype": "Print Format",
+		"filters": [
+			["name", "in", ["POS Invoice TSE"]],
+		],
+	},
+]
+
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
 # 	{
@@ -142,6 +192,11 @@ after_migrate = "erpnext_tse.install.after_migrate"
 # Hook on document methods and events
 
 doc_events = {
+	"POS Closing Entry": {
+		"on_submit": [
+			"erpnext_tse.erpnext_tse.doctype.dsfinv_k_cash_point_closing.dsfinv_k_cash_point_closing.create_cash_point_closing_for_pos_closing_entry",
+		],
+	},
 	"POS Invoice": {
 		"before_submit": [
 			"erpnext_tse.erpnext_tse.doctype.tse_transaction.tse_transaction.create_tse_transaction_for_pos_invoice",
@@ -159,24 +214,15 @@ doc_events = {
 
 # Scheduled Tasks
 # ---------------
-
-# scheduler_events = {
-# 	"all": [
-# 		"erpnext_tse.tasks.all"
-# 	],
-# 	"daily": [
-# 		"erpnext_tse.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"erpnext_tse.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"erpnext_tse.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"erpnext_tse.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+	"hourly": [
+		"erpnext_tse.erpnext_tse.doctype.dsfinv_k_cash_point_closing.dsfinv_k_cash_point_closing.refresh_pending_cash_point_closings",
+		"erpnext_tse.erpnext_tse.doctype.dsfinv_k_export.dsfinv_k_export.refresh_pending_exports",
+	],
+	"daily": [
+		"erpnext_tse.erpnext_tse.doctype.dsfinv_k_export.dsfinv_k_export.cleanup_expired_export_files",
+	],
+}
 
 # Testing
 # -------

@@ -16,6 +16,12 @@ Organization,Organisation
 General,Allgemein
 Activated,Aktivert
 Login details,Zugangsdaten
+TSE Credentials,TSE Zugangsdaten,
+DSFinV-K Credentials,DSFinV-K Zugangsdaten,
+TSE API Key,TSE API-Key,
+TSE API Secret,TSE API-Secret,
+DSFinV-K API Key,DSFinV-K API-Key,
+DSFinV-K API Secret,DSFinV-K API-Secret,
 TSE Security Device Details,TSE-Sicherheitsvorrichtung Details
 TSE Serial Number,TSE-Seriennummer
 Activated at,Aktiviert um
@@ -33,10 +39,33 @@ Provider Events,Provider Events
 "TSE Auth Failed","TSE-Authentifizierung fehlgeschlagen"
 "Authentication failed. Please check your settings.","Authentifizierung fehlgeschlagen. Bitte prüfen Sie Ihre Einstellungen."
 "TSE Auth Result","TSE-Authentifizierungsergebnis"
+"Test TSE Auth","TSE-Authentifizierung testen",
+"Testing TSE connection...","TSE-Verbindung wird getestet...",
+"Test DSFinV-K Auth","DSFinV-K-Authentifizierung testen",
+"Testing DSFinV-K connection...","DSFinV-K-Verbindung wird getestet...",
+"DSFinV-K Auth Failed","DSFinV-K-Authentifizierung fehlgeschlagen",
+"DSFinV-K Auth Result","DSFinV-K-Authentifizierungsergebnis",
 "Status","Status"
 "Environment","Umgebung"
 "Organization ID","Organisations-ID"
 "Access Token Expires At","Access-Token läuft ab am"
+"TSE Token","TSE Token",
+"TSE Access Token","TSE Access Token",
+"TSE Access Token Expires At","TSE Access Token läuft ab am",
+"TSE Refresh Token","TSE Refresh Token",
+"TSE Refresh Token Expires At","TSE Refresh Token läuft ab am",
+"TSE Auth Status","TSE Auth-Status",
+"TSE Last Auth Status","TSE Letzter Auth-Status",
+"TSE Last Auth Message","TSE Letzte Auth-Nachricht",
+"DSFinV-K Organization","DSFinV-K Organisation",
+"DSFinV-K Token","DSFinV-K Token",
+"DSFinV-K Access Token","DSFinV-K Access Token",
+"DSFinV-K Access Token Expires At","DSFinV-K Access Token läuft ab am",
+"DSFinV-K Refresh Token","DSFinV-K Refresh Token",
+"DSFinV-K Refresh Token Expires At","DSFinV-K Refresh Token läuft ab am",
+"DSFinV-K Auth Status","DSFinV-K Auth-Status",
+"DSFinV-K Last Auth Status","DSFinV-K Letzter Auth-Status",
+"DSFinV-K Last Auth Message","DSFinV-K Letzte Auth-Nachricht",
 "TSE Enabled","TSE aktiviert"
 "TSE integration has been enabled. Please save to apply changes.","Die TSE-Integration wurde aktiviert. Bitte speichern, um die Änderungen zu übernehmen."
 "TSE Disabled","TSE deaktiviert"
@@ -139,7 +168,8 @@ Provider Events,Provider Events
 "Missing TSE VAT Rate configuration for vat_rate_code '{0}'.","Fehlende TSE-USt.-Satz-Konfiguration für vat_rate_code '{0}'."
 "Missing TSE Payment Type configuration for payment_code '{0}'.","Fehlende TSE-Payment-Type-Konfiguration für payment_code '{0}'."
 "This account '{0}' belongs to '{1}', and not to '{2}'.","Dieses Konto '{0}' gehört zu '{1}' und nicht zu '{2}'."
-"Please enter API Key and API Secret in TSE Settings.","Bitte geben Sie API-Key und API-Secret in den TSE Settings ein."
+"Please enter TSE API Key and API Secret in TSE Settings.","Bitte geben Sie TSE API-Key und TSE API-Secret in den TSE Settings ein."
+"Please enter DSFinV-K API Key and API Secret in TSE Settings.","Bitte geben Sie DSFinV-K API-Key und DSFinV-K API-Secret in den TSE Settings ein."
 "Could not obtain a valid access token from Fiskaly.","Ein gültiges Zugriffstoken konnte von Fiskaly nicht abgerufen werden."
 "Could not reach Fiskaly auth endpoint: {0}","Der Fiskaly-Auth-Endpunkt konnte nicht erreicht werden: {0}"
 "Authentication failed (401). Error code: {0}, message: {1}","Authentifizierung fehlgeschlagen (401). Fehlercode: {0}, Nachricht: {1}"
@@ -154,3 +184,15 @@ Provider Events,Provider Events
 "Export requires either by_creation_date or by_business_date payload.","Der Export erfordert entweder by_creation_date- oder by_business_date-Payload."
 "QR code helper unavailable","QR-Code-Helfer nicht verfügbar"
 "TSE Print Format","TSE-Druckformat"
+TSE Warning,TSE-Warnung,
+"Disable TSE","TSE deaktivieren",
+"Disable TSE integration?","TSE-Integration deaktivieren?",
+"You are about to disable TSE integration.","Sie sind dabei, die TSE-Integration zu deaktivieren.",
+"Disabling stops continuous signing of receipts and can create gaps in the signature chain.","Das Deaktivieren stoppt die fortlaufende Signierung von Belegen und kann Luecken in der Signaturkette verursachen.",
+"Only proceed if you understand the compliance impact.","Fahren Sie nur fort, wenn Sie die rechtlichen Auswirkungen verstehen.",
+"Warning: Disabling TSE interrupts the continuous signing of receipts. This can create gaps in the signature chain. Please confirm that you understand this.","Warnung: Das Deaktivieren der TSE unterbricht die fortlaufende Signierung von Belegen. Dies kann Luecken in der Signaturkette verursachen. Bitte bestaetigen Sie, dass Sie das verstanden haben.",
+"I understand this warning","Ich habe den Hinweis verstanden",
+"Warning: Disabling TSE interrupts the continuous signing of receipts. Please confirm the warning before saving.","Warnung: Das Deaktivieren der TSE unterbricht die fortlaufende Signierung von Belegen. Bitte bestaetigen Sie den Hinweis vor dem Speichern.",
+"Disabling TSE interrupts the continuous signing of receipts. Please confirm the warning by checking ""I understand this warning"".","Das Deaktivieren der TSE unterbricht die fortlaufende Signierung von Belegen. Bitte bestaetigen Sie den Hinweis, indem Sie ""Ich habe den Hinweis verstanden"" ankreuzen.",
+ValidationError,Validierungsfehler,
+TSE integration is disabled. Please enable it in TSE Settings.,Die TSE-Integration ist deaktiviert. Bitte aktivieren Sie sie in den TSE Settings.,
