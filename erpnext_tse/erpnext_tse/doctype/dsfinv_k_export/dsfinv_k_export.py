@@ -16,7 +16,7 @@ from erpnext_tse.erpnext_tse.tss_providers import get_tse_provider
 
 
 def _is_tse_enabled() -> bool:
-	return bool(cint(frappe.db.get_single_value("TSE Settings", "enabled", cache=False)))
+	return bool(cint(frappe.db.get_single_value("TSE Settings", "enabled")))
 
 
 class DSFinVKExport(Document):

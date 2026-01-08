@@ -5,11 +5,11 @@ on:
   push:
     branches:
       - version-15
-      - version-15-develop
+      - develop
   pull_request:
     branches:
       - version-15
-      - version-15-develop
+      - develop
 
 concurrency:
   group: develop-erpnext_tse-${{ github.event.number }}
