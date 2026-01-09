@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import logging
+import time
 import uuid
 from datetime import datetime
 from typing import Any
@@ -19,6 +20,10 @@ logger = logging.getLogger("erpnext_tse.fiskaly")
 
 TOKEN_SCOPE_TSE = "tse"
 TOKEN_SCOPE_DSFINVK = "dsfinvk"
+RATE_LIMIT_STATUS = 429
+RATE_LIMIT_ERROR_CODES = {"E_TOO_MANY_REQUESTS"}
+RATE_LIMIT_MAX_RETRIES = 5
+RATE_LIMIT_BASE_DELAY_SECONDS = 1.0
 
 
 class FiskalyProvider(BaseTSEProvider):
@@ -172,6 +177,89 @@ class FiskalyProvider(BaseTSEProvider):
 			"code": data.get("code"),
 			"message": data.get("message") or "",
 		}
+
+	def _retry_after_seconds(self, response: requests.Response) -> int | None:
+		raw = response.headers.get("Retry-After")
+		if not raw:
+			return None
+		raw = str(raw).strip()
+		if raw.isdigit():
+			return max(0, int(raw))
+		return None
+
+	def _should_retry_rate_limit(self, status: int, err: dict[str, Any] | None, attempt: int) -> bool:
+		if attempt >= RATE_LIMIT_MAX_RETRIES:
+			return False
+		if status == RATE_LIMIT_STATUS:
+			return True
+		if err and err.get("code") in RATE_LIMIT_ERROR_CODES:
+			return True
+		return False
+
+	def _sleep_rate_limit(self, attempt: int, response: requests.Response) -> None:
+		retry_after = self._retry_after_seconds(response)
+		if retry_after is not None:
+			delay = retry_after
+		else:
+			delay = RATE_LIMIT_BASE_DELAY_SECONDS * (2**attempt)
+		if delay <= 0:
+			return
+		self._log(
+			logging.WARNING,
+			"Fiskaly rate limit hit, backing off",
+			delay=delay,
+			attempt=attempt + 1,
+		)
+		time.sleep(delay)
+
+	def _request_json_with_retry(
+		self,
+		request_func,
+		error_label: str,
+		method: str,
+		path: str,
+		**kwargs,
+	) -> dict[str, Any]:
+		for attempt in range(RATE_LIMIT_MAX_RETRIES + 1):
+			resp = request_func(method, path, **kwargs)
+			status = resp.status_code
+			try:
+				data = resp.json()
+			except ValueError:
+				err = self._parse_error_response(resp)
+				if self._should_retry_rate_limit(status, err, attempt):
+					self._sleep_rate_limit(attempt, resp)
+					continue
+				frappe.throw(
+					_("{0} returned a non-JSON response ({1}). Error: {2}").format(
+						error_label, status, err.get("message") or err.get("error")
+					)
+				)
+
+			if "status_code" not in data:
+				data["status_code"] = status
+
+			if 200 <= status < 300:
+				return data
+
+			err = {
+				"status_code": data.get("status_code", status),
+				"error": data.get("error", resp.reason),
+				"code": data.get("code"),
+				"message": data.get("message") or "",
+			}
+			if self._should_retry_rate_limit(status, err, attempt):
+				self._sleep_rate_limit(attempt, resp)
+				continue
+
+			frappe.throw(
+				_("{0} returned an error ({1}). Code: {2}, Message: {3}").format(
+					error_label,
+					status,
+					err.get("code") or "N/A",
+					err.get("message") or err.get("error") or "Unknown error",
+				)
+			)
 
 	def _store_auth_error(
 		self,
@@ -523,62 +611,12 @@ class FiskalyProvider(BaseTSEProvider):
 
 	def _request_json(self, method: str, path: str, **kwargs) -> dict[str, Any]:
 		"""Wrapper um request(), der immer ein Dict zurueckgibt und Fehler schoen aufbereitet."""
-		resp = self.request(method, path, **kwargs)
-
-		status = resp.status_code
-		try:
-			data = resp.json()
-		except ValueError:
-			err = self._parse_error_response(resp)
-			frappe.throw(
-				_("Fiskaly returned a non-JSON response ({0}). Error: {1}").format(
-					status, err.get("message") or err.get("error")
-				)
-			)
-
-		if "status_code" not in data:
-			data["status_code"] = status
-
-		if 200 <= status < 300:
-			return data
-
-		err = self._parse_error_response(resp)
-		frappe.throw(
-			_("Fiskaly returned an error ({0}). Code: {1}, Message: {2}").format(
-				status,
-				err.get("code") or "N/A",
-				err.get("message") or err.get("error") or "Unknown error",
-			)
-		)
+		return self._request_json_with_retry(self.request, "Fiskaly", method, path, **kwargs)
 
 	def _dsfinvk_request_json(self, method: str, path: str, **kwargs) -> dict[str, Any]:
 		"""JSON-Wrapper fuer DSFinV-K Endpunkte (separater Host)."""
-		resp = self._dsfinvk_request(method, path, **kwargs)
-
-		status = resp.status_code
-		try:
-			data = resp.json()
-		except ValueError:
-			err = self._parse_error_response(resp)
-			frappe.throw(
-				_("Fiskaly DSFinV-K returned a non-JSON response ({0}). Error: {1}").format(
-					status, err.get("message") or err.get("error")
-				)
-			)
-
-		if "status_code" not in data:
-			data["status_code"] = status
-
-		if 200 <= status < 300:
-			return data
-
-		err = self._parse_error_response(resp)
-		frappe.throw(
-			_("Fiskaly DSFinV-K returned an error ({0}). Code: {1}, Message: {2}").format(
-				status,
-				err.get("code") or "N/A",
-				err.get("message") or err.get("error") or "Unknown error",
-			)
+		return self._request_json_with_retry(
+			self._dsfinvk_request, "Fiskaly DSFinV-K", method, path, **kwargs
 		)
 
 	# ---------------------------------------------------------------------
