@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import time
 from datetime import datetime
 from typing import Any
 
@@ -21,6 +22,7 @@ TRANSACTION_STATE_MAP = {
 RECOVERY_PAGE_SIZE = 100
 RECOVERY_ORDER_BY = "time_start"
 RECOVERY_ORDER = "asc"
+RECOVERY_PAGE_DELAY_SECONDS = 1
 
 
 # ---------------------------------------------------------------------------
@@ -207,6 +209,8 @@ def _fetch_remote_transactions(
 		if new_items == 0:
 			break
 		offset += page_size
+		if RECOVERY_PAGE_DELAY_SECONDS and not frappe.flags.in_test:
+			time.sleep(RECOVERY_PAGE_DELAY_SECONDS)
 
 	return items
 
