@@ -22,7 +22,10 @@ TRANSACTION_STATE_MAP = {
 RECOVERY_PAGE_SIZE = 100
 RECOVERY_ORDER_BY = "time_start"
 RECOVERY_ORDER = "asc"
-RECOVERY_PAGE_DELAY_SECONDS = 1
+RECOVERY_PAGE_DELAY_SECONDS = 2.0
+RECOVERY_MAX_PAGES = 200
+RECOVERY_REQUEST_TIMEOUT = 15
+RECOVERY_DEVICE_DELAY_SECONDS = 4
 
 
 # ---------------------------------------------------------------------------
@@ -173,19 +176,27 @@ def _fetch_remote_transactions(
 	tss_docname: str,
 	tss_company: str | None,
 	page_size: int = RECOVERY_PAGE_SIZE,
+	page_delay: float = RECOVERY_PAGE_DELAY_SECONDS,
+	max_pages: int | None = RECOVERY_MAX_PAGES,
+	timeout: int | float | None = RECOVERY_REQUEST_TIMEOUT,
 ) -> list[dict[str, Any]]:
 	items: list[dict[str, Any]] = []
 	seen_ids: set[str] = set()
 	offset = 0
+	pages_fetched = 0
 
 	while True:
+		if max_pages is not None and pages_fetched >= max_pages:
+			break
 		raw = provider.list_transactions(
 			tss_id,
 			limit=page_size,
 			offset=offset,
 			order_by=RECOVERY_ORDER_BY,
 			order=RECOVERY_ORDER,
+			timeout=timeout,
 		)
+		pages_fetched += 1
 		page_items = _extract_remote_list(raw)
 		if not page_items:
 			break
@@ -209,8 +220,10 @@ def _fetch_remote_transactions(
 		if new_items == 0:
 			break
 		offset += page_size
-		if RECOVERY_PAGE_DELAY_SECONDS and not frappe.flags.in_test:
-			time.sleep(RECOVERY_PAGE_DELAY_SECONDS)
+		if max_pages is not None and pages_fetched >= max_pages:
+			break
+		if page_delay and not frappe.flags.in_test:
+			time.sleep(page_delay)
 
 	return items
 
@@ -377,7 +390,7 @@ def enqueue_recovery_sync() -> dict[str, Any]:
 	job = frappe.enqueue(
 		"erpnext_tse.erpnext_tse.doctype.tse_transaction.recovery.run_recovery_sync",
 		queue="long",
-		timeout=600,
+		timeout=3600,
 		job_id="tse_transaction_recovery_sync",
 		enqueue_after_commit=True,
 		now=frappe.flags.in_test,
@@ -412,11 +425,9 @@ def run_recovery_sync(user: str | None = None, **kwargs):
 		remote_items: list[dict[str, Any]] = []
 		processed_devices: set[str] = set()
 
-		for device in devices:
-			if not device.tss_id:
-				continue
-			if device.tss_status == "ORPHANED":
-				continue
+		eligible_devices = [device for device in devices if device.tss_id and device.tss_status != "ORPHANED"]
+
+		for i, device in enumerate(eligible_devices):
 			processed_devices.add(device.name)
 			remote_items.extend(
 				_fetch_remote_transactions(
@@ -426,6 +437,9 @@ def run_recovery_sync(user: str | None = None, **kwargs):
 					tss_company=device.company,
 				)
 			)
+
+			if RECOVERY_DEVICE_DELAY_SECONDS and i < len(eligible_devices) - 1 and not frappe.flags.in_test:
+				time.sleep(RECOVERY_DEVICE_DELAY_SECONDS)
 
 		remote_items.sort(key=_remote_sort_key)
 

@@ -264,7 +264,7 @@ def enqueue_recovery_sync() -> dict[str, Any]:
 	job = frappe.enqueue(
 		"erpnext_tse.erpnext_tse.doctype.tse_client.recovery.run_recovery_sync",
 		queue="long",
-		timeout=600,
+		timeout=3600,
 		job_id="tse_client_recovery_sync",
 		enqueue_after_commit=True,
 		now=frappe.flags.in_test,
