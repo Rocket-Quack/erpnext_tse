@@ -554,7 +554,9 @@ class FiskalyProvider(BaseTSEProvider):
 			url=url,
 		)
 
-		resp = requests.request(method, url, headers=headers, timeout=15, **kwargs)
+		timeout = kwargs.pop("timeout", 15)
+
+		resp = requests.request(method, url, headers=headers, timeout=timeout, **kwargs)
 		if resp.status_code != 401:
 			return resp
 
@@ -571,7 +573,7 @@ class FiskalyProvider(BaseTSEProvider):
 		token = self.ensure_valid_access_token(scope=TOKEN_SCOPE_TSE)
 
 		headers["Authorization"] = f"Bearer {token}"
-		return requests.request(method, url, headers=headers, timeout=15, **kwargs)
+		return requests.request(method, url, headers=headers, timeout=timeout, **kwargs)
 
 	def _dsfinvk_request(self, method: str, path: str, **kwargs) -> requests.Response:
 		"""API call for DSFinV-K endpoints (separate host)."""
@@ -589,7 +591,9 @@ class FiskalyProvider(BaseTSEProvider):
 		headers.setdefault("Authorization", f"Bearer {token}")
 		headers.setdefault("Content-Type", "application/json")
 
-		resp = requests.request(method, url, headers=headers, timeout=30, **kwargs)
+		timeout = kwargs.pop("timeout", 30)
+
+		resp = requests.request(method, url, headers=headers, timeout=timeout, **kwargs)
 		if resp.status_code != 401:
 			return resp
 
@@ -607,7 +611,7 @@ class FiskalyProvider(BaseTSEProvider):
 		)
 
 		headers["Authorization"] = f"Bearer {token}"
-		return requests.request(method, url, headers=headers, timeout=30, **kwargs)
+		return requests.request(method, url, headers=headers, timeout=timeout, **kwargs)
 
 	def _request_json(self, method: str, path: str, **kwargs) -> dict[str, Any]:
 		"""Wrapper um request(), der immer ein Dict zurueckgibt und Fehler schoen aufbereitet."""
@@ -772,15 +776,24 @@ class FiskalyProvider(BaseTSEProvider):
 	# High-Level: Transaction operations (SIGN DE upsertTransaction)
 	# ---------------------------------------------------------------------
 
-	def list_transactions(self, tss_id: str, **query_params) -> dict[str, Any]:
+	def list_transactions(
+		self,
+		tss_id: str,
+		*,
+		timeout: int | float | None = None,
+		**query_params,
+	) -> dict[str, Any]:
 		"""Alle Transaktionen einer TSS abrufen (fuer spaetere Synchronisation).
 
 		Unterstuetzt optionale Query-Parameter wie limit, offset, order_by, order.
 		"""
+		kwargs: dict[str, Any] = {"params": query_params or None}
+		if timeout is not None:
+			kwargs["timeout"] = timeout
 		return self._request_json(
 			method="GET",
 			path=f"/tss/{tss_id}/tx",
-			params=query_params or None,
+			**kwargs,
 		)
 
 	def get_transaction(self, tss_id: str, tx_id: str) -> dict[str, Any]:
