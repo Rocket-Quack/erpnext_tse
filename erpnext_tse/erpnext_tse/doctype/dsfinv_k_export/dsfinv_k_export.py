@@ -10,12 +10,13 @@ from uuid import uuid4
 import frappe
 from frappe import _
 from frappe.model.document import Document
+from frappe.utils import cint
 
 from erpnext_tse.erpnext_tse.tss_providers import get_tse_provider
 
 
 def _is_tse_enabled() -> bool:
-	return bool(frappe.db.get_single_value("TSE Settings", "enabled"))
+	return bool(cint(frappe.db.get_single_value("TSE Settings", "enabled")))
 
 
 class DSFinVKExport(Document):
