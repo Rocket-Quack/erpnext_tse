@@ -49,6 +49,14 @@ class FiskalyProvider(BaseTSEProvider):
 		else:
 			logger.log(level, msg)
 
+	def _apply_json_content_type(self, headers: dict[str, Any], kwargs: dict[str, Any]) -> dict[str, Any]:
+		"""Only set JSON content type when a request body is actually present."""
+		if kwargs.get("json") is not None or kwargs.get("data") is not None:
+			headers.setdefault("Content-Type", "application/json")
+		else:
+			headers.pop("Content-Type", None)
+		return headers
+
 	# --- configuration from settings ------------------------------------
 
 	def get_base_url(self) -> str:
@@ -545,7 +553,7 @@ class FiskalyProvider(BaseTSEProvider):
 
 		headers = kwargs.pop("headers", {}) or {}
 		headers.setdefault("Authorization", f"Bearer {token}")
-		headers.setdefault("Content-Type", "application/json")
+		headers = self._apply_json_content_type(headers, kwargs)
 
 		self._log(
 			logging.INFO,
@@ -573,6 +581,7 @@ class FiskalyProvider(BaseTSEProvider):
 		token = self.ensure_valid_access_token(scope=TOKEN_SCOPE_TSE)
 
 		headers["Authorization"] = f"Bearer {token}"
+		headers = self._apply_json_content_type(headers, kwargs)
 		return requests.request(method, url, headers=headers, timeout=timeout, **kwargs)
 
 	def _dsfinvk_request(self, method: str, path: str, **kwargs) -> requests.Response:
@@ -589,7 +598,7 @@ class FiskalyProvider(BaseTSEProvider):
 
 		headers = kwargs.pop("headers", {}) or {}
 		headers.setdefault("Authorization", f"Bearer {token}")
-		headers.setdefault("Content-Type", "application/json")
+		headers = self._apply_json_content_type(headers, kwargs)
 
 		timeout = kwargs.pop("timeout", 30)
 
@@ -611,6 +620,7 @@ class FiskalyProvider(BaseTSEProvider):
 		)
 
 		headers["Authorization"] = f"Bearer {token}"
+		headers = self._apply_json_content_type(headers, kwargs)
 		return requests.request(method, url, headers=headers, timeout=timeout, **kwargs)
 
 	def _request_json(self, method: str, path: str, **kwargs) -> dict[str, Any]:

@@ -3,19 +3,26 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from datetime import datetime
 from typing import Any
 
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import cint
+from frappe.utils import cint, cstr
 
 from erpnext_tse.erpnext_tse.tss_providers import get_tse_provider
 
 
 def _is_tse_enabled() -> bool:
 	return bool(cint(frappe.db.get_single_value("TSE Settings", "enabled")))
+
+
+READY_POS_CLOSING_STATUS = "Submitted"
+ACTIVE_CASH_POINT_CLOSING_STATUSES = ("PENDING", "WORKING", "COMPLETED")
+CLEANUP_ALLOWED_STATUSES = ("COMPLETED",)
 
 
 class DSFinVKCashPointClosing(Document):
@@ -48,14 +55,59 @@ class DSFinVKCashPointClosing(Document):
 		event.triggered_by = frappe.session.user
 
 
-def create_cash_point_closing_for_pos_closing_entry(doc, method: str | None = None):
-	"""DocEvent hook for POS Closing Entry (on_submit)."""
+def _normalize_doc(doc):
 	if isinstance(doc, dict):
 		doc = frappe.get_doc(doc)
+	return doc
+
+
+def _should_enqueue_for_pos_closing(doc) -> bool:
+	if not doc or doc.doctype != "POS Closing Entry":
+		return False
+	if not _is_tse_enabled():
+		return False
+	if cint(getattr(doc, "docstatus", 0)) != 1:
+		return False
+	return cstr(getattr(doc, "status", None)) == READY_POS_CLOSING_STATUS
+
+
+def enqueue_cash_point_closing_for_pos_closing_entry(doc, method: str | None = None):
+	doc = _normalize_doc(doc)
+	if not _should_enqueue_for_pos_closing(doc):
+		return
+
+	frappe.enqueue(
+		"erpnext_tse.erpnext_tse.doctype.dsfinv_k_cash_point_closing.dsfinv_k_cash_point_closing.process_cash_point_closing_for_pos_closing_entry",
+		queue="short",
+		job_id=f"dsfinvk_cash_point_closing_create:{doc.name}",
+		deduplicate=True,
+		pos_closing_entry_name=doc.name,
+		enqueue_after_commit=True,
+	)
+
+
+def process_cash_point_closing_for_pos_closing_entry(pos_closing_entry_name: str):
+	if not _is_tse_enabled():
+		return
+
+	doc = frappe.get_doc("POS Closing Entry", pos_closing_entry_name)
+	if not _should_enqueue_for_pos_closing(doc):
+		return
+
+	return create_cash_point_closing_for_pos_closing_entry(doc)
+
+
+def create_cash_point_closing_for_pos_closing_entry(doc, method: str | None = None):
+	"""Create a DSFinV-K Cash Point Closing for a completed POS Closing Entry."""
+	doc = _normalize_doc(doc)
 
 	if doc.doctype != "POS Closing Entry":
 		return
 	if not _is_tse_enabled():
+		return
+	if cint(getattr(doc, "docstatus", 0)) != 1:
+		return
+	if cstr(getattr(doc, "status", None)) != READY_POS_CLOSING_STATUS:
 		return
 
 	if not getattr(doc, "pos_profile", None):
@@ -81,20 +133,23 @@ def create_cash_point_closing_for_pos_closing_entry(doc, method: str | None = No
 	existing = frappe.db.get_value(
 		"DSFinV-K Cash Point Closing",
 		{"pos_closing_entry": doc.name},
-		["name", "status"],
+		["name", "status", "source_hash"],
 		as_dict=True,
 	)
 	if existing:
-		if existing.status == "COMPLETED":
-			return
-		frappe.throw(
-			_("DSFinV-K Cash Point Closing already exists for POS Closing Entry {0} (status: {1}).").format(
-				doc.name, existing.status
-			)
-		)
+		if existing.status in ACTIVE_CASH_POINT_CLOSING_STATUSES:
+			return frappe.get_doc("DSFinV-K Cash Point Closing", existing.name)
+
+	cash_register_id = register.cash_register_id or tse_client.client_id
+	source_hash = _build_source_hash(doc, cash_register_id, getattr(doc, "posting_date", None))
+	duplicate = _get_active_duplicate_by_source_hash(source_hash, exclude_names=[existing.name] if existing else None)
+	if duplicate:
+		_log_duplicate_skip(duplicate.name, doc.name)
+		return frappe.get_doc("DSFinV-K Cash Point Closing", duplicate.name)
 
 	payload = _build_cash_point_closing_payload(doc, register, tse_client)
 	closing_doc = _create_cash_point_closing_doc(doc, register, tse_client, payload)
+	closing_doc.source_hash = source_hash
 
 	settings = frappe.get_single("TSE Settings")
 	provider = get_tse_provider(settings)
@@ -115,6 +170,7 @@ def create_cash_point_closing_for_pos_closing_entry(doc, method: str | None = No
 		closing_doc.save()
 		if closing_doc.status in ("PENDING", "WORKING"):
 			enqueue_cash_point_closing_status_refresh(closing_doc.name)
+		return closing_doc
 	except Exception as exc:
 		closing_doc.status = "ERROR"
 		closing_doc.log_provider_event(
@@ -132,6 +188,60 @@ def create_cash_point_closing_for_pos_closing_entry(doc, method: str | None = No
 		)
 
 
+def _build_source_hash(doc, client_id: str | None, business_date) -> str:
+	pos_invoice_names = []
+	for row in doc.get("pos_transactions") or []:
+		pos_invoice = getattr(row, "pos_invoice", None) or (
+			row.get("pos_invoice") if isinstance(row, dict) else None
+		)
+		if pos_invoice:
+			pos_invoice_names.append(cstr(pos_invoice).strip())
+
+	source_payload = {
+		"company": cstr(getattr(doc, "company", None) or ""),
+		"pos_profile": cstr(getattr(doc, "pos_profile", None) or ""),
+		"client_id": cstr(client_id or ""),
+		"business_date": cstr(business_date or ""),
+		"pos_invoices": sorted(set(pos_invoice_names)),
+	}
+	raw = json.dumps(source_payload, sort_keys=True, separators=(",", ":"))
+	return hashlib.sha256(raw.encode()).hexdigest()
+
+
+def _get_active_duplicate_by_source_hash(source_hash: str | None, exclude_names: list[str] | None = None):
+	if not source_hash:
+		return None
+
+	filters = {
+		"source_hash": source_hash,
+		"status": ["in", list(ACTIVE_CASH_POINT_CLOSING_STATUSES)],
+	}
+	if exclude_names:
+		filters["name"] = ["not in", exclude_names]
+
+	return frappe.db.get_value(
+		"DSFinV-K Cash Point Closing",
+		filters,
+		["name", "status"],
+		as_dict=True,
+	)
+
+
+def _log_duplicate_skip(closing_name: str, pos_closing_entry_name: str):
+	doc = frappe.get_doc("DSFinV-K Cash Point Closing", closing_name)
+	doc.log_provider_event(
+		event_type="CREATE_SKIPPED_DUPLICATE",
+		provider_action="dedupe",
+		status_before=doc.status,
+		status_after=doc.status,
+		message_summary=_("Skipped duplicate create attempt for POS Closing Entry {0}.").format(
+			pos_closing_entry_name
+		),
+	)
+	doc.flags.ignore_permissions = True
+	doc.save()
+
+
 def _create_cash_point_closing_doc(doc, register, tse_client, payload: dict[str, Any]):
 	closing_doc = frappe.get_doc(
 		{
@@ -146,6 +256,11 @@ def _create_cash_point_closing_doc(doc, register, tse_client, payload: dict[str,
 			"cash_point_closing_export_id": payload.get("cash_point_closing_export_id"),
 			"business_date": payload.get("head", {}).get("business_date"),
 			"export_creation_date": _to_datetime(payload.get("head", {}).get("export_creation_date")),
+			"source_hash": _build_source_hash(
+				doc,
+				payload.get("client_id"),
+				payload.get("head", {}).get("business_date"),
+			),
 			"request_payload": frappe.as_json(payload, indent=2),
 		}
 	)
@@ -217,7 +332,7 @@ def _build_cash_point_closing_head(doc, transactions: list[dict[str, Any]]) -> d
 	}
 
 	if getattr(doc, "posting_date", None):
-		head["business_date"] = doc.posting_date
+		head["business_date"] = frappe.utils.getdate(doc.posting_date).isoformat()
 
 	return head
 
@@ -586,6 +701,41 @@ def _to_unix(value) -> int | None:
 	return int(dt.timestamp())
 
 
+def backfill_source_hashes(limit: int = 200):
+	while True:
+		rows = frappe.get_all(
+			"DSFinV-K Cash Point Closing",
+			filters={"source_hash": ["in", ["", None]]},
+			fields=["name", "pos_closing_entry", "client_id", "business_date"],
+			limit=limit,
+		)
+		if not rows:
+			break
+
+		processed_any = False
+		for row in rows:
+			if not row.pos_closing_entry or not frappe.db.exists("POS Closing Entry", row.pos_closing_entry):
+				continue
+			try:
+				pos_closing = frappe.get_doc("POS Closing Entry", row.pos_closing_entry)
+				source_hash = _build_source_hash(pos_closing, row.client_id, row.business_date)
+				frappe.db.set_value(
+					"DSFinV-K Cash Point Closing",
+					row.name,
+					"source_hash",
+					source_hash,
+					update_modified=False,
+				)
+				processed_any = True
+			except Exception:
+				frappe.log_error(
+					frappe.get_traceback(),
+					_("Backfill source_hash failed for DSFinV-K Cash Point Closing {0}").format(row.name),
+				)
+		if not processed_any:
+			break
+
+
 def enqueue_cash_point_closing_status_refresh(closing_name: str):
 	frappe.enqueue(
 		"erpnext_tse.erpnext_tse.doctype.dsfinv_k_cash_point_closing.dsfinv_k_cash_point_closing.refresh_cash_point_closing_status",
@@ -597,6 +747,7 @@ def enqueue_cash_point_closing_status_refresh(closing_name: str):
 	)
 
 
+@frappe.whitelist()
 def refresh_cash_point_closing_status(closing_name: str):
 	if not _is_tse_enabled():
 		return
@@ -639,6 +790,89 @@ def refresh_cash_point_closing_status(closing_name: str):
 			frappe.get_traceback(),
 			_("DSFinV-K Cash Point Closing status refresh failed"),
 		)
+
+
+def _ensure_cleanup_allowed(doc: DSFinVKCashPointClosing):
+	frappe.only_for(("System Manager", "TSE Admin"))
+
+	if doc.status not in CLEANUP_ALLOWED_STATUSES:
+		frappe.throw(
+			_("Cleanup is only allowed for Cash Point Closings in status {0}. Current status: {1}").format(
+				", ".join(CLEANUP_ALLOWED_STATUSES), doc.status
+			)
+		)
+
+	if not doc.closing_id:
+		frappe.throw(_("Cannot delete a Cash Point Closing without a provider closing ID."))
+
+
+@frappe.whitelist()
+def mark_cash_point_closing_as_deleted(
+	name: str,
+	cleanup_reason: str,
+	cleanup_valid_record: str | None = None,
+):
+	if not _is_tse_enabled():
+		frappe.throw(_("TSE integration is disabled. Please enable it in TSE Settings."))
+
+	doc = frappe.get_doc("DSFinV-K Cash Point Closing", name)
+	_ensure_cleanup_allowed(doc)
+
+	cleanup_reason = cstr(cleanup_reason).strip()
+	cleanup_valid_record = cstr(cleanup_valid_record).strip() or None
+
+	if not cleanup_reason:
+		frappe.throw(_("Cleanup reason is required."))
+
+	settings = frappe.get_single("TSE Settings")
+	provider = get_tse_provider(settings)
+	status_before = doc.status
+
+	try:
+		latest = provider.get_cash_point_closing(doc.closing_id)
+		_apply_cash_point_closing_response(doc, latest)
+		if doc.status not in CLEANUP_ALLOWED_STATUSES:
+			frappe.throw(
+				_("Cleanup is only allowed when the provider status is {0}. Current status: {1}").format(
+					", ".join(CLEANUP_ALLOWED_STATUSES), doc.status
+				)
+			)
+
+		resp = provider.delete_cash_point_closing(doc.closing_id)
+		_apply_cash_point_closing_response(doc, resp)
+		if doc.status != "DELETED":
+			frappe.throw(
+				_("Provider did not confirm deletion. Current provider status: {0}").format(doc.status)
+			)
+		doc.status = "DELETED"
+		doc.cleanup_reason = cleanup_reason
+		doc.cleanup_valid_record = cleanup_valid_record
+		doc.cleanup_performed_by = frappe.session.user
+		doc.cleanup_performed_at = frappe.utils.now_datetime()
+		doc.log_provider_event(
+			event_type="ADMIN_CLEANUP_DELETE",
+			provider_action="delete_cash_point_closing",
+			resp=resp,
+			status_before=status_before,
+			status_after=doc.status,
+			message_summary=_("Cash Point Closing marked as deleted by administrator."),
+		)
+		doc.flags.ignore_permissions = True
+		doc.save()
+		frappe.db.commit()
+		return {"name": doc.name, "status": doc.status}
+	except Exception as exc:
+		doc.log_provider_event(
+			event_type="ADMIN_CLEANUP_DELETE_FAILED",
+			provider_action="delete_cash_point_closing",
+			status_before=status_before,
+			status_after=doc.status,
+			message_summary=str(exc),
+		)
+		doc.flags.ignore_permissions = True
+		doc.save()
+		frappe.db.commit()
+		raise
 
 
 def refresh_pending_cash_point_closings():
