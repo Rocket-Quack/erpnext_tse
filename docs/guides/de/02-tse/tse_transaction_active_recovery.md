@@ -92,6 +92,15 @@ Auf `TSE Transaction` stehen fuer `System Manager` und `TSE Admin` zwei Aktionen
   - cancelt nicht, wenn die verknuepfte `POS Invoice` bereits submitted ist
   - loest bei erfolgreichem `CANCELLED` den Link auf der Draft-`POS Invoice`
 
+## Entscheidungshilfe
+
+- `POS Invoice` ist noch Draft und Remote-Status ist `ACTIVE`
+  - `Resolve ACTIVE` ist der richtige Weg
+- `POS Invoice` ist submitted und Remote-Status ist `FINISHED`
+  - nur synchronisieren, nicht canceln
+- Status lokal unklar oder fachlicher Vorgang widerspruechlich
+  - kein Automatismus, sondern Admin-Review
+
 ## Wichtige Hinweise
 - Eine `ACTIVE`-Transaction wird nicht automatisch per Timeout von Fiskaly beendet.
 - Eine Draft-`POS Invoice` mit haengender `ACTIVE`-Transaction darf nicht durch ein blindes `finish_transaction` repariert werden.

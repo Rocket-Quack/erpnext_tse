@@ -18,6 +18,15 @@ Kein Retry ohne Pruefung, wenn:
 - das `POS Closing Entry` nicht mehr `Submitted` ist
 - bereits ein anderes aktives Cash Point Closing fuer denselben fachlichen Inhalt existiert
 
+## Entscheidungshilfe
+
+- `ERROR` nach temporaerem Provider-/Worker-Fehler:
+  Ursache pruefen, dann `Retry Create`
+- `ERROR` wegen fachlichem Mapping-Problem:
+  zuerst Mapping/Daten korrigieren, dann `Retry Create`
+- doppelter oder fachlich falscher Datensatz:
+  nicht retryen, sondern falschen Datensatz mit `Mark as Deleted` bereinigen
+
 ## Ablauf im UI
 1. Oeffne den Datensatz **DSFinV-K Cash Point Closing**.
 2. Pruefe den Status und die Provider Events.
@@ -29,6 +38,17 @@ Kein Retry ohne Pruefung, wenn:
 - Es wird kein zusaetzlicher Hauptdatensatz fuer denselben Fall erstellt.
 - Bei Erfolg wird derselbe Datensatz auf `PENDING`, `WORKING` oder `COMPLETED` aktualisiert.
 - Bei Bedarf wird ein vorhandener Provider-Datensatz zuerst synchronisiert, bevor ein neuer Create-Versuch gestartet wird.
+
+## Mark as Deleted
+
+`Mark as Deleted` ist fuer `System Manager` und `TSE Admin` gedacht, wenn ein Cash Point Closing fachlich falsch oder doppelt ist.
+
+Dabei gilt:
+- kein lokales Hart-Loeschen
+- Provider-Delete bei Fiskaly wird ausgefuehrt
+- lokal wechselt der Datensatz nur dann auf `DELETED`, wenn Fiskaly dies bestaetigt
+- `cleanup_reason` ist Pflicht
+- `Valid Record` ist optional und dokumentiert, welcher andere Datensatz gueltig bleiben soll
 
 ## Event-Log
 Fuer den Retry werden zusaetzliche Events geschrieben:
@@ -45,3 +65,4 @@ Damit bleibt nachvollziehbar:
 - Der Retry setzt voraus, dass das verknuepfte `POS Closing Entry` weiterhin submitted und fachlich gueltig ist.
 - Der alte RQ-Job selbst wird nicht neu gestartet.
 - Der Retry arbeitet am fachlichen Datensatz und ist deshalb langlebiger und nachvollziehbarer als ein reiner Queue-Retry.
+- Bereits gezogene Exporte fuer denselben Zeitraum muessen vor einem spaeteren Cleanup fachlich geprueft werden.

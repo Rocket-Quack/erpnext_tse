@@ -30,3 +30,5 @@ Der DSFinV-K Export erzeugt die gesetzliche Exportdatei fuer einen Zeitraum. Der
 - Download ist nur bei **COMPLETED** moeglich.
 - Retention: Geloeschte Dateien richten sich nach `Export Retention (Days)`.
 - Provider-Export selbst ist bis `time_expiration` gueltig.
+- `DSFinV-K Cash Point Closings` im Status `DELETED` gehen nicht in kuenftige Exporte ein.
+- Wenn fuer einen Zeitraum bereits ein Export gezogen wurde und spaeter Closings auf `DELETED` gesetzt werden, muss der Zeitraum fachlich neu bewertet werden.

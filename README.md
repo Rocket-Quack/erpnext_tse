@@ -47,9 +47,13 @@ bench --site yoursite.com install-app erpnext_tse
 ## Kurz-Anleitungen
 
 Detaillierte Anleitungen finden Sie hier:
+- [Guide-Uebersicht](/docs/guides/de/README.md)
 - [TSE ERPNext Integration installieren](/docs/guides/de/01-allgemein/installation.md)
 - [Erstkonfiguration TSE in ERPNext](/docs/guides/de/01-allgemein/configuration.md)
 - [Nutzung der TSE in Produktion](/docs/guides/de/01-allgemein/usage.md)
+- [Troubleshooting und Betriebsfehler](/docs/guides/de/01-allgemein/troubleshooting.md)
+- [Release und Migration fuer Produktivsysteme](/docs/guides/de/01-allgemein/release_und_migration.md)
+- [Rollen und Rechte](/docs/guides/de/01-allgemein/rollen_und_rechte.md)
 
 Diese Kurzübersciht zeigt, wie Sie die TSE-APP in ERPNext nutzen.
 

@@ -69,5 +69,7 @@ bench restart
 - Starte mit der Erstkonfiguration in `docs/guides/de/01-allgemein/configuration.md`.
 - Lege zuerst ein **TSE Security Device (TSS)** an, danach **TSE Clients** und verknuepfe **POS Profile**.
 - Pruefe die taegliche Nutzung in `docs/guides/de/01-allgemein/usage.md`.
+- Fuer Rollenvergabe und Admin-Aktionen siehe `docs/guides/de/01-allgemein/rollen_und_rechte.md`.
+- Fuer spaetere Updates in Produktivsystemen siehe `docs/guides/de/01-allgemein/release_und_migration.md`.
 
 ![TSE Uebersichtsseite in ERPNext](/docs/assets/TSE-Settings/OVERVIEW.png)

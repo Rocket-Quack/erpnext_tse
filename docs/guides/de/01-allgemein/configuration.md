@@ -99,7 +99,10 @@ Ordne jedem Steuerkonto (Account Type = Tax) einen **VAT Rate Code** zu. Standar
 
 ## Weiterfuehrende Guides
 
+- Guide-Uebersicht: `docs/guides/de/README.md`
 - Ablaufdiagramme: `docs/guides/de/01-allgemein/process_diagram.md`
 - Taegliche Nutzung: `docs/guides/de/01-allgemein/usage.md`
+- Glossar und Datenmodell: `docs/guides/de/01-allgemein/glossar_und_datenmodell.md`
+- Troubleshooting: `docs/guides/de/01-allgemein/troubleshooting.md`
 - TSE Fehlerbehandlung: `docs/guides/de/02-tse/tse_transaction_active_recovery.md`
 - Recovery: `docs/guides/de/04-recovery/recovery_tse_security_device.md`, `docs/guides/de/04-recovery/recovery_tse_client.md`, `docs/guides/de/04-recovery/recovery_tse_transaction.md`
