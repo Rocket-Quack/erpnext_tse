@@ -193,8 +193,8 @@ after_migrate = "erpnext_tse.install.after_migrate"
 
 doc_events = {
 	"POS Closing Entry": {
-		"on_submit": [
-			"erpnext_tse.erpnext_tse.doctype.dsfinv_k_cash_point_closing.dsfinv_k_cash_point_closing.create_cash_point_closing_for_pos_closing_entry",
+		"on_change": [
+			"erpnext_tse.erpnext_tse.doctype.dsfinv_k_cash_point_closing.dsfinv_k_cash_point_closing.enqueue_cash_point_closing_for_pos_closing_entry",
 		],
 	},
 	"POS Invoice": {

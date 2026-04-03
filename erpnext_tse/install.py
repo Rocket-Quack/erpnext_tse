@@ -12,6 +12,7 @@ def after_install():
 	create_default_dsfinvk_vat_rates()
 	create_default_dsfinvk_payment_types()
 	create_custom_fields_for_erpnext()
+	backfill_dsfinvk_cash_point_closing_source_hashes()
 
 
 def after_migrate():
@@ -22,6 +23,7 @@ def after_migrate():
 	create_default_dsfinvk_vat_rates()
 	create_default_dsfinvk_payment_types()
 	create_custom_fields_for_erpnext()
+	backfill_dsfinvk_cash_point_closing_source_hashes()
 
 
 def create_tse_roles():
@@ -167,6 +169,8 @@ def create_custom_fields_for_erpnext():
 				options="TSE Transaction",
 				insert_after="pos_profile",
 				reqd=0,
+				read_only=1,
+				no_copy=1,
 			),
 		],
 	}
@@ -180,3 +184,21 @@ def create_custom_fields_for_erpnext():
 	)
 	if existing_tse_client_field:
 		frappe.db.set_value("Custom Field", existing_tse_client_field, "reqd", 0)
+
+	existing_tse_transaction_field = frappe.db.exists(
+		"Custom Field", {"dt": "POS Invoice", "fieldname": "tse_transaction"}
+	)
+	if existing_tse_transaction_field:
+		frappe.db.set_value(
+			"Custom Field",
+			existing_tse_transaction_field,
+			{"reqd": 0, "read_only": 1, "no_copy": 1},
+		)
+
+
+def backfill_dsfinvk_cash_point_closing_source_hashes():
+	from erpnext_tse.erpnext_tse.doctype.dsfinv_k_cash_point_closing.dsfinv_k_cash_point_closing import (
+		backfill_source_hashes,
+	)
+
+	backfill_source_hashes()
