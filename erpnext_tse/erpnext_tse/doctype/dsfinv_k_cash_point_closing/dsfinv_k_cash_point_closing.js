@@ -30,6 +30,26 @@ frappe.ui.form.on("DSFinV-K Cash Point Closing", {
 			});
 		}
 
+		if (frm.doc.status === "ERROR" && canCleanupCashPointClosing) {
+			frm.add_custom_button(__("Retry Create"), () => {
+				frappe.confirm(
+					__(
+						"This queues a new create attempt for the linked POS Closing Entry. Continue?"
+					),
+					() => {
+						frappe
+							.call({
+								method: "erpnext_tse.erpnext_tse.doctype.dsfinv_k_cash_point_closing.dsfinv_k_cash_point_closing.retry_cash_point_closing_create",
+								args: { name: frm.doc.name },
+								freeze: true,
+								freeze_message: __("Queueing cash point closing retry..."),
+							})
+							.then(() => frm.reload_doc());
+					}
+				);
+			});
+		}
+
 		if (frm.doc.status === "COMPLETED" && canCleanupCashPointClosing) {
 			frm.add_custom_button(__("Mark as Deleted"), () => {
 				frappe.prompt(

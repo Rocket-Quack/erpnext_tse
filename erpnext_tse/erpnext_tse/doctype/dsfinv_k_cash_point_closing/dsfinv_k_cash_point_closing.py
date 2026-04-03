@@ -23,6 +23,7 @@ def _is_tse_enabled() -> bool:
 READY_POS_CLOSING_STATUS = "Submitted"
 ACTIVE_CASH_POINT_CLOSING_STATUSES = ("PENDING", "WORKING", "COMPLETED")
 CLEANUP_ALLOWED_STATUSES = ("COMPLETED",)
+MANAGE_CASH_POINT_CLOSING_ROLES = ("System Manager", "TSE Admin")
 
 
 class DSFinVKCashPointClosing(Document):
@@ -61,6 +62,32 @@ def _normalize_doc(doc):
 	return doc
 
 
+def _enqueue_cash_point_closing_create_job(pos_closing_entry_name: str, *, enqueue_after_commit: bool = True):
+	job_id = f"dsfinvk_cash_point_closing_create:{pos_closing_entry_name}"
+	frappe.enqueue(
+		"erpnext_tse.erpnext_tse.doctype.dsfinv_k_cash_point_closing.dsfinv_k_cash_point_closing.process_cash_point_closing_for_pos_closing_entry",
+		queue="short",
+		job_id=job_id,
+		deduplicate=True,
+		pos_closing_entry_name=pos_closing_entry_name,
+		enqueue_after_commit=enqueue_after_commit,
+	)
+	return job_id
+
+
+def _enqueue_cash_point_closing_retry_job(closing_name: str, *, enqueue_after_commit: bool = True):
+	job_id = f"dsfinvk_cash_point_closing_retry:{closing_name}"
+	frappe.enqueue(
+		"erpnext_tse.erpnext_tse.doctype.dsfinv_k_cash_point_closing.dsfinv_k_cash_point_closing.process_cash_point_closing_retry",
+		queue="short",
+		job_id=job_id,
+		deduplicate=True,
+		closing_name=closing_name,
+		enqueue_after_commit=enqueue_after_commit,
+	)
+	return job_id
+
+
 def _should_enqueue_for_pos_closing(doc) -> bool:
 	if not doc or doc.doctype != "POS Closing Entry":
 		return False
@@ -76,28 +103,50 @@ def enqueue_cash_point_closing_for_pos_closing_entry(doc, method: str | None = N
 	if not _should_enqueue_for_pos_closing(doc):
 		return
 
-	frappe.enqueue(
-		"erpnext_tse.erpnext_tse.doctype.dsfinv_k_cash_point_closing.dsfinv_k_cash_point_closing.process_cash_point_closing_for_pos_closing_entry",
-		queue="short",
-		job_id=f"dsfinvk_cash_point_closing_create:{doc.name}",
-		deduplicate=True,
-		pos_closing_entry_name=doc.name,
-		enqueue_after_commit=True,
-	)
+	_enqueue_cash_point_closing_create_job(doc.name, enqueue_after_commit=True)
 
 
 def process_cash_point_closing_for_pos_closing_entry(pos_closing_entry_name: str):
 	if not _is_tse_enabled():
-		return
+		return {"status": "SKIPPED", "reason": "tse_disabled"}
 
-	doc = frappe.get_doc("POS Closing Entry", pos_closing_entry_name)
-	if not _should_enqueue_for_pos_closing(doc):
-		return
+	try:
+		doc = frappe.get_doc("POS Closing Entry", pos_closing_entry_name)
+		if not _should_enqueue_for_pos_closing(doc):
+			return {"status": "SKIPPED", "reason": "pos_closing_not_ready"}
 
-	return create_cash_point_closing_for_pos_closing_entry(doc)
+		closing_doc = create_cash_point_closing_for_pos_closing_entry(doc, raise_on_error=False)
+		if closing_doc:
+			return {"status": closing_doc.status, "closing_name": closing_doc.name}
+		return {"status": "SKIPPED", "reason": "no_action"}
+	except Exception as exc:
+		frappe.log_error(frappe.get_traceback(), _("DSFinV-K Cash Point Closing background job failed"))
+		return {
+			"status": "ERROR",
+			"message": cstr(exc),
+			"pos_closing_entry": pos_closing_entry_name,
+		}
 
 
-def create_cash_point_closing_for_pos_closing_entry(doc, method: str | None = None):
+def process_cash_point_closing_retry(closing_name: str):
+	if not _is_tse_enabled():
+		return {"status": "SKIPPED", "reason": "tse_disabled"}
+
+	try:
+		closing_doc = retry_cash_point_closing_create(closing_name, enqueue=False)
+		return {"status": closing_doc.status, "closing_name": closing_doc.name}
+	except Exception as exc:
+		frappe.log_error(frappe.get_traceback(), _("DSFinV-K Cash Point Closing retry failed"))
+		return {
+			"status": "ERROR",
+			"message": cstr(exc),
+			"closing_name": closing_name,
+		}
+
+
+def create_cash_point_closing_for_pos_closing_entry(
+	doc, method: str | None = None, raise_on_error: bool = True
+):
 	"""Create a DSFinV-K Cash Point Closing for a completed POS Closing Entry."""
 	doc = _normalize_doc(doc)
 
@@ -153,39 +202,12 @@ def create_cash_point_closing_for_pos_closing_entry(doc, method: str | None = No
 
 	settings = frappe.get_single("TSE Settings")
 	provider = get_tse_provider(settings)
-
-	status_before = closing_doc.status
-	try:
-		resp = provider.create_cash_point_closing(payload)
-		_apply_cash_point_closing_response(closing_doc, resp)
-		closing_doc.log_provider_event(
-			event_type="CREATE",
-			provider_action="create_cash_point_closing",
-			resp=resp,
-			status_before=status_before,
-			status_after=closing_doc.status,
-			message_summary="Cash Point Closing created at provider",
-		)
-		closing_doc.flags.ignore_permissions = True
-		closing_doc.save()
-		if closing_doc.status in ("PENDING", "WORKING"):
-			enqueue_cash_point_closing_status_refresh(closing_doc.name)
-		return closing_doc
-	except Exception as exc:
-		closing_doc.status = "ERROR"
-		closing_doc.log_provider_event(
-			event_type="ERROR",
-			provider_action="create_cash_point_closing",
-			status_before=status_before,
-			status_after="ERROR",
-			message_summary=str(exc),
-		)
-		closing_doc.flags.ignore_permissions = True
-		closing_doc.save()
-		frappe.log_error(frappe.get_traceback(), _("DSFinV-K Cash Point Closing failed"))
-		frappe.throw(
-			_("DSFinV-K Cash Point Closing failed. Please review the DSFinV-K Cash Point Closing record.")
-		)
+	return _submit_cash_point_closing_create(
+		closing_doc,
+		payload,
+		get_tse_provider(settings),
+		raise_on_error=raise_on_error,
+	)
 
 
 def _build_source_hash(doc, client_id: str | None, business_date) -> str:
@@ -283,7 +305,9 @@ def _apply_cash_point_closing_response(doc, resp: dict[str, Any]):
 	doc.response_payload = frappe.as_json(resp, indent=2)
 
 
-def _build_cash_point_closing_payload(doc, register, tse_client) -> dict[str, Any]:
+def _build_cash_point_closing_payload(
+	doc, register, tse_client, closing_export_id: int | None = None
+) -> dict[str, Any]:
 	cash_register_id = register.cash_register_id or tse_client.client_id
 	if not cash_register_id:
 		frappe.throw(_("Missing cash register/client ID for DSFinV-K closing."))
@@ -295,7 +319,7 @@ def _build_cash_point_closing_payload(doc, register, tse_client) -> dict[str, An
 	if not transactions:
 		frappe.throw(_("No transactions available for DSFinV-K Cash Point Closing."))
 
-	closing_export_id = _reserve_cash_point_closing_export_id(register)
+	closing_export_id = closing_export_id or _reserve_cash_point_closing_export_id(register)
 	head = _build_cash_point_closing_head(doc, transactions)
 
 	return {
@@ -793,7 +817,7 @@ def refresh_cash_point_closing_status(closing_name: str):
 
 
 def _ensure_cleanup_allowed(doc: DSFinVKCashPointClosing):
-	frappe.only_for(("System Manager", "TSE Admin"))
+	frappe.only_for(MANAGE_CASH_POINT_CLOSING_ROLES)
 
 	if doc.status not in CLEANUP_ALLOWED_STATUSES:
 		frappe.throw(
@@ -873,6 +897,156 @@ def mark_cash_point_closing_as_deleted(
 		doc.save()
 		frappe.db.commit()
 		raise
+
+
+@frappe.whitelist()
+def retry_cash_point_closing_create(name: str, enqueue: bool = True):
+	frappe.only_for(MANAGE_CASH_POINT_CLOSING_ROLES)
+
+	if not _is_tse_enabled():
+		frappe.throw(_("TSE integration is disabled. Please enable it in TSE Settings."))
+
+	doc = frappe.get_doc("DSFinV-K Cash Point Closing", name)
+	if doc.status != "ERROR":
+		frappe.throw(_("Retry is only available for Cash Point Closings in status ERROR."))
+	if not doc.pos_closing_entry:
+		frappe.throw(_("Retry requires a linked POS Closing Entry."))
+
+	pos_closing = frappe.get_doc("POS Closing Entry", doc.pos_closing_entry)
+	if not _should_enqueue_for_pos_closing(pos_closing):
+		frappe.throw(
+			_(
+				"Retry is only possible when the linked POS Closing Entry is submitted and in status {0}."
+			).format(READY_POS_CLOSING_STATUS)
+		)
+
+	duplicate = _get_active_duplicate_by_source_hash(doc.source_hash, exclude_names=[doc.name])
+	if duplicate:
+		frappe.throw(
+			_(
+				"An active Cash Point Closing already exists for this source ({0}, status {1})."
+			).format(duplicate.name, duplicate.status)
+		)
+
+	if enqueue:
+		doc.log_provider_event(
+			event_type="RETRY_QUEUED",
+			provider_action="retry_create_cash_point_closing",
+			status_before=doc.status,
+			status_after=doc.status,
+			message_summary=_("Retry queued by administrator."),
+		)
+		doc.flags.ignore_permissions = True
+		doc.save()
+
+		job_id = _enqueue_cash_point_closing_retry_job(doc.name, enqueue_after_commit=True)
+		return {"status": "QUEUED", "job_id": job_id, "closing_name": doc.name}
+
+	register = frappe.get_doc("DSFinV-K Cash Register", doc.dsfinv_k_cash_register)
+	tse_client = frappe.get_doc("TSE Client", doc.tse_client)
+	payload = _build_cash_point_closing_payload(
+		pos_closing,
+		register,
+		tse_client,
+		closing_export_id=doc.cash_point_closing_export_id,
+	)
+	status_before = doc.status
+	doc.request_payload = frappe.as_json(payload, indent=2)
+	doc.status = "PENDING"
+	doc.error_code = None
+	doc.error_message = None
+	doc.time_update = None
+	doc.time_deleted = None
+	doc.response_payload = None
+	doc.flags.ignore_permissions = True
+	doc.save()
+
+	doc.log_provider_event(
+		event_type="RETRY_STARTED",
+		provider_action="retry_create_cash_point_closing",
+		status_before=status_before,
+		status_after="PENDING",
+		message_summary=_("Retry started by administrator."),
+	)
+	doc.flags.ignore_permissions = True
+	doc.save()
+
+	if doc.closing_id:
+		settings = frappe.get_single("TSE Settings")
+		provider = get_tse_provider(settings)
+		try:
+			remote = provider.get_cash_point_closing(doc.closing_id)
+			_apply_cash_point_closing_response(doc, remote)
+			doc.log_provider_event(
+				event_type="RETRY_SYNC_EXISTING",
+				provider_action="get_cash_point_closing",
+				resp=remote,
+				status_before="PENDING",
+				status_after=doc.status,
+				message_summary=_("Synced existing provider cash point closing during retry."),
+			)
+			doc.flags.ignore_permissions = True
+			doc.save()
+			if doc.status in ("PENDING", "WORKING"):
+				enqueue_cash_point_closing_status_refresh(doc.name)
+			return doc
+		except Exception:
+			doc.flags.ignore_permissions = True
+			doc.closing_id = None
+			doc.save()
+
+	settings = frappe.get_single("TSE Settings")
+	return _submit_cash_point_closing_create(
+		doc,
+		payload,
+		get_tse_provider(settings),
+		raise_on_error=False,
+	)
+
+
+def _submit_cash_point_closing_create(
+	closing_doc: DSFinVKCashPointClosing,
+	payload: dict[str, Any],
+	provider,
+	*,
+	raise_on_error: bool = True,
+):
+	status_before = closing_doc.status
+	try:
+		resp = provider.create_cash_point_closing(payload)
+		_apply_cash_point_closing_response(closing_doc, resp)
+		closing_doc.log_provider_event(
+			event_type="CREATE",
+			provider_action="create_cash_point_closing",
+			resp=resp,
+			status_before=status_before,
+			status_after=closing_doc.status,
+			message_summary="Cash Point Closing created at provider",
+		)
+		closing_doc.flags.ignore_permissions = True
+		closing_doc.save()
+		if closing_doc.status in ("PENDING", "WORKING"):
+			enqueue_cash_point_closing_status_refresh(closing_doc.name)
+		return closing_doc
+	except Exception as exc:
+		closing_doc.status = "ERROR"
+		closing_doc.log_provider_event(
+			event_type="ERROR",
+			provider_action="create_cash_point_closing",
+			status_before=status_before,
+			status_after="ERROR",
+			message_summary=str(exc),
+		)
+		closing_doc.flags.ignore_permissions = True
+		closing_doc.save()
+		frappe.log_error(frappe.get_traceback(), _("DSFinV-K Cash Point Closing failed"))
+		if raise_on_error:
+			frappe.throw(
+				_(
+					"DSFinV-K Cash Point Closing failed. Please review the DSFinV-K Cash Point Closing record."
+				)
+			)
+		return closing_doc
 
 
 def refresh_pending_cash_point_closings():

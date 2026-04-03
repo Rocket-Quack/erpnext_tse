@@ -32,3 +32,8 @@ Das DSFinV-K Cash Point Closing bildet den Kassenabschluss fuer einen Zeitraum a
 - `number` ist die TSE Transaction Number (BON_NR).
 - Bei fehlendem Mapping oder fehlender TSE Transaction wird der Closing fehlschlagen.
 - Der Status wird via Job auch spaeter nachgezogen, falls er noch PENDING ist.
+
+## Fehler und Retry
+- Falls der Create-Prozess fehlschlaegt, bleibt der Datensatz lokal erhalten und wechselt auf `ERROR`.
+- Ein manueller Retry erfolgt ueber denselben Datensatz, nicht ueber einen neuen Hauptdatensatz.
+- Details: `docs/guides/de/03-dsfinvk/dsfinvk_cash_point_closing_retry.md`

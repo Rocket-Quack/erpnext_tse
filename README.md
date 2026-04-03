@@ -47,9 +47,9 @@ bench --site yoursite.com install-app erpnext_tse
 ## Kurz-Anleitungen
 
 Detaillierte Anleitungen finden Sie hier:
-- [TSE ERPNext Integration installieren](/docs/guides/de/installation.md)
-- [Erstkonfiguration TSE in ERPNext](/docs/guides/de/configuration.md)
-- [Nutzung der TSE in Produktion](/docs/guides/de/usage.md)
+- [TSE ERPNext Integration installieren](/docs/guides/de/01-allgemein/installation.md)
+- [Erstkonfiguration TSE in ERPNext](/docs/guides/de/01-allgemein/configuration.md)
+- [Nutzung der TSE in Produktion](/docs/guides/de/01-allgemein/usage.md)
 
 Diese Kurzübersciht zeigt, wie Sie die TSE-APP in ERPNext nutzen.
 
@@ -90,7 +90,7 @@ signierte POS-Transaktion moeglich.
 
 Wenn diese Schritte abgeschlossen sind, kann die eigentliche TSE-Konfiguration
 (Security Device, Clients, POS-Profile) gestartet werden.
-Details: [Erstkonfiguration TSE in ERPNext](/docs/guides/de/configuration.md)
+Details: [Erstkonfiguration TSE in ERPNext](/docs/guides/de/01-allgemein/configuration.md)
 
 ### TSE Konfigurationen
 
@@ -121,7 +121,7 @@ Der TSE Client wird wiederum einem TSE Security Device zugewiesen.
 - Das Feld `TSE Client` im POS Profile wird dabei automatisch gepflegt. Pruefe,
   dass der Link gesetzt ist.
 
-Details: [Erstkonfiguration TSE in ERPNext](/docs/guides/de/configuration.md)
+Details: [Erstkonfiguration TSE in ERPNext](/docs/guides/de/01-allgemein/configuration.md)
 
 ### Signierte POS-Belege
 Nach dem Absenden einer POS Invoice startet die App automatisch die
@@ -132,7 +132,7 @@ TSE-Transaktion und beendet sie mit den Transaktionsdaten.
 - Im verknuepften Dokument sind Status, Signaturdaten und `qr_code_data` sichtbar.
 - Beim Druck das Print Format **POS Invoice TSE** verwenden (siehe unten).
 
-Details: [Nutzung der TSE in Produktion](/docs/guides/de/usage.md)
+Details: [Nutzung der TSE in Produktion](/docs/guides/de/01-allgemein/usage.md)
 
 ### Print Format
 

@@ -41,11 +41,17 @@ Diese Anleitung beschreibt die Nutzung der TSE App im Betrieb und wie signierte 
 - Beim Submit eines **POS Closing Entry** wird automatisch ein **DSFinV-K Cash Point Closing** erstellt.
 - Der Status sollte nach Abschluss auf **COMPLETED** stehen.
 - Fuer Exporte nutze den Doctype **DSFinV-K Export** und starte den Export manuell.
+- Steht ein Cash Point Closing auf **ERROR**, kann ein `TSE Admin` oder `System Manager` den Datensatz ueber **Retry Create** erneut anstossen.
 
 ## Recovery (nur im Notfall)
 
 Wenn lokale Daten und Provider-Daten auseinanderlaufen, aktiviere den **Recovery Modus** in den TSE Settings und nutze die Recovery Guides:
 
-- `docs/guides/de/recovery_tse_security_device.md`
-- `docs/guides/de/recovery_tse_client.md`
-- `docs/guides/de/recovery_tse_transaction.md`
+- `docs/guides/de/04-recovery/recovery_tse_security_device.md`
+- `docs/guides/de/04-recovery/recovery_tse_client.md`
+- `docs/guides/de/04-recovery/recovery_tse_transaction.md`
+
+Fuer TSE-Transaktionen im Status `ACTIVE` oder DSFinV-K Cash Point Closings im Status `ERROR` siehe zusaetzlich:
+
+- `docs/guides/de/02-tse/tse_transaction_active_recovery.md`
+- `docs/guides/de/03-dsfinvk/dsfinvk_cash_point_closing_retry.md`
