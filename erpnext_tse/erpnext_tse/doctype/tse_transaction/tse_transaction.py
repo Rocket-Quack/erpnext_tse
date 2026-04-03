@@ -11,6 +11,14 @@ from frappe.utils import cint
 
 from erpnext_tse.erpnext_tse.tss_providers import get_tse_provider
 
+TRANSACTION_STATE_MAP = {
+	"ACTIVE": "ACTIVE",
+	"FINISHED": "FINISHED",
+	"CANCELLED": "CANCELLED",
+	"CANCELED": "CANCELLED",
+}
+FINAL_TRANSACTION_STATUSES = ("FINISHED", "CANCELLED")
+
 
 class TSETransaction(Document):
 	def before_cancel(self):
@@ -58,6 +66,238 @@ class TSETransaction(Document):
 					"Please enable it before creating a TSE Security Device."
 				)
 			)
+
+
+def _normalize_transaction_status(state: str | None) -> str | None:
+	if not state:
+		return None
+	return TRANSACTION_STATE_MAP.get(str(state).strip().upper(), "ERROR")
+
+
+def _to_datetime(value: Any) -> datetime | None:
+	if not value:
+		return None
+	if isinstance(value, datetime):
+		return value
+	if isinstance(value, int | float):
+		return datetime.fromtimestamp(value)
+	try:
+		return frappe.utils.get_datetime(value)
+	except Exception:
+		return None
+
+
+def _to_int(value: Any, default: int | None = None) -> int | None:
+	if value is None:
+		return default
+	try:
+		return int(value)
+	except Exception:
+		return default
+
+
+def _get_transaction_provider_context(tse_tx: Document):
+	settings = frappe.get_single("TSE Settings")
+	provider = get_tse_provider(settings)
+
+	tse_device = frappe.get_doc("TSE Security Device", tse_tx.tse_security_device)
+	tse_client = frappe.get_doc("TSE Client", tse_tx.tse_client)
+
+	tss_id = getattr(tse_device, "tss_id", None)
+	client_id = getattr(tse_client, "client_id", None)
+	if not tss_id or not client_id:
+		frappe.throw(_("TSE Transaction is missing provider identifiers (tss_id / client_id)."))
+
+	return provider, tss_id, client_id
+
+
+def _persist_transaction_state(tse_tx: Document, submit_if_final: bool = False):
+	if not getattr(tse_tx, "name", None) or not frappe.db.exists("TSE Transaction", tse_tx.name):
+		return
+
+	frappe.db.set_value(
+		"TSE Transaction",
+		tse_tx.name,
+		{
+			"transaction_id": tse_tx.transaction_id,
+			"transaction_status": tse_tx.transaction_status,
+			"transaction_revision": tse_tx.transaction_revision,
+			"transaction_number": tse_tx.transaction_number,
+			"signature_counter": tse_tx.signature_counter,
+			"start_time": tse_tx.start_time,
+			"end_time": tse_tx.end_time,
+			"qr_code_data": tse_tx.qr_code_data,
+			"full_schema_req": tse_tx.full_schema_req,
+			"full_schema_res": tse_tx.full_schema_res,
+		},
+		update_modified=False,
+	)
+
+	if submit_if_final and tse_tx.docstatus == 0 and tse_tx.transaction_status in FINAL_TRANSACTION_STATUSES:
+		frappe.db.set_value("TSE Transaction", tse_tx.name, "docstatus", 1, update_modified=False)
+		tse_tx.docstatus = 1
+
+
+def _apply_transaction_response(
+	tse_tx: Document,
+	response: dict[str, Any],
+	*,
+	request_payload: dict[str, Any] | None = None,
+	submit_if_final: bool = False,
+):
+	state = _normalize_transaction_status(response.get("state") or response.get("status"))
+	if state:
+		tse_tx.transaction_status = state
+
+	tx_id = response.get("_id") or response.get("transaction_id") or response.get("id")
+	if tx_id:
+		tse_tx.transaction_id = tx_id
+
+	revision = response.get("revision") or response.get("tx_revision")
+	if revision is not None:
+		tse_tx.transaction_revision = revision
+
+	transaction_number = response.get("number") or response.get("transaction_number")
+	if transaction_number is not None:
+		tse_tx.transaction_number = transaction_number
+
+	signature = response.get("signature") or {}
+	if isinstance(signature, dict) and signature.get("counter") is not None:
+		tse_tx.signature_counter = signature.get("counter")
+
+	start_time = _to_datetime(response.get("time_start") or response.get("timeStart"))
+	if start_time:
+		tse_tx.start_time = start_time
+
+	end_time = _to_datetime(response.get("time_end") or response.get("timeEnd"))
+	if end_time:
+		tse_tx.end_time = end_time
+
+	qr_code_data = response.get("qr_code_data")
+	if qr_code_data:
+		tse_tx.qr_code_data = qr_code_data
+
+	if request_payload is not None:
+		tse_tx.full_schema_req = frappe.as_json(request_payload, indent=2)
+	tse_tx.full_schema_res = frappe.as_json(response, indent=2)
+
+	_persist_transaction_state(tse_tx, submit_if_final=submit_if_final)
+	return tse_tx
+
+
+def _get_linked_pos_invoice_docstatus(pos_invoice_name: str | None) -> int | None:
+	if not pos_invoice_name or not frappe.db.exists("POS Invoice", pos_invoice_name):
+		return None
+	return cint(frappe.db.get_value("POS Invoice", pos_invoice_name, "docstatus"))
+
+
+def _unlink_pos_invoice_tse_transaction(pos_invoice_name: str | None, tse_tx_name: str | None):
+	if not pos_invoice_name or not tse_tx_name:
+		return
+	if not frappe.db.exists("POS Invoice", pos_invoice_name):
+		return
+	if cint(frappe.db.get_value("POS Invoice", pos_invoice_name, "docstatus")) != 0:
+		return
+	current_link = frappe.db.get_value("POS Invoice", pos_invoice_name, "tse_transaction")
+	if current_link != tse_tx_name:
+		return
+	frappe.db.set_value("POS Invoice", pos_invoice_name, "tse_transaction", None, update_modified=False)
+
+
+def _sync_existing_transaction_from_remote(
+	tse_tx: Document,
+	response: dict[str, Any],
+	*,
+	request_payload: dict[str, Any] | None = None,
+	clear_pos_invoice_link_on_cancel: bool = False,
+):
+	_apply_transaction_response(
+		tse_tx,
+		response,
+		request_payload=request_payload,
+		submit_if_final=True,
+	)
+	if clear_pos_invoice_link_on_cancel and tse_tx.transaction_status == "CANCELLED":
+		_unlink_pos_invoice_tse_transaction(tse_tx.pos_invoice, tse_tx.name)
+	return tse_tx
+
+
+def _resolve_started_transaction_failure(
+	*,
+	provider,
+	pos_invoice,
+	tse_tx: Document | None,
+	tss_id: str,
+	client_id: str,
+	schema: dict[str, Any],
+):
+	if not tse_tx or not getattr(tse_tx, "transaction_id", None):
+		return
+
+	stored_tse_tx = None
+	if getattr(tse_tx, "name", None) and frappe.db.exists("TSE Transaction", tse_tx.name):
+		stored_tse_tx = frappe.get_doc("TSE Transaction", tse_tx.name)
+
+	try:
+		remote = provider.get_transaction(tss_id, tse_tx.transaction_id)
+	except Exception:
+		frappe.log_error(
+			frappe.get_traceback(),
+			_("Could not fetch Fiskaly transaction status after TSE submit failure."),
+		)
+		return
+
+	remote_status = _normalize_transaction_status(remote.get("state") or remote.get("status"))
+	if remote_status == "FINISHED" and stored_tse_tx:
+		_sync_existing_transaction_from_remote(
+			stored_tse_tx,
+			remote,
+			request_payload={
+				"schema": schema,
+				"client_id": client_id,
+				"state": "FINISHED",
+			},
+		)
+		return
+
+	if remote_status != "ACTIVE":
+		if not stored_tse_tx:
+			if remote_status == "CANCELLED":
+				pos_invoice.tse_transaction = None
+			return
+		_sync_existing_transaction_from_remote(
+			stored_tse_tx,
+			remote,
+			clear_pos_invoice_link_on_cancel=(remote_status == "CANCELLED"),
+		)
+		if remote_status == "CANCELLED":
+			pos_invoice.tse_transaction = None
+		return
+
+	try:
+		next_revision = (_to_int(remote.get("revision") or remote.get("tx_revision"), 1) or 1) + 1
+		cancel_response = provider.cancel_transaction(
+			tss_id=tss_id,
+			tx_id=tse_tx.transaction_id,
+			tx_revision=next_revision,
+			client_id=client_id,
+		)
+		if stored_tse_tx:
+			_sync_existing_transaction_from_remote(
+				stored_tse_tx,
+				cancel_response,
+				request_payload={
+					"state": "CANCELLED",
+					"client_id": client_id,
+				},
+				clear_pos_invoice_link_on_cancel=True,
+			)
+		pos_invoice.tse_transaction = None
+	except Exception:
+		frappe.log_error(
+			frappe.get_traceback(),
+			_("Could not cancel ACTIVE Fiskaly transaction after TSE submit failure."),
+		)
 
 
 # ---------------------------------------------------------------------------
@@ -376,120 +616,195 @@ def create_tse_transaction_for_pos_invoice(doc, method: str | None = None):
 	#    Beim Anlegen Fachlich gesehen immer die erste
 	tx_revision = 1
 
-	# 11. Transaktion starten (start_transaction) und Transaction Details zwischen Speichern
-	response = provider.start_transaction(
+	tse_tx = None
+
+	try:
+		# 11. Transaktion starten (start_transaction) und Transaction Details zwischen Speichern
+		response = provider.start_transaction(
+			tss_id=tss_id,
+			client_id=client_id,
+			tx_revision=1,
+		)
+
+		# 12. Anlegen des Docs mit Zwischenstand
+		tse_tx = frappe.get_doc(
+			{
+				"doctype": "TSE Transaction",
+				"tse_security_device": tse_device.name,
+				"tse_client": tse_client.name,
+				"company": doc.company,
+				"pos_invoice": doc.name,
+				"transaction_type": tx_type,
+				"transaction_id": response.get("_id"),
+				"transaction_revision": tx_revision,  # Sollte beim anlegen zuerst 1 sein
+				"transaction_status": response.get("state"),  # Sollte ACTIVE sein
+				"start_time": datetime.fromtimestamp(response.get("time_start")),
+			}
+		)
+
+		# 13. Zwischenstand speichern falls etwas schief läuft
+		tse_tx.flags.ignore_permissions = True
+		tse_tx.insert()
+		tse_tx.flags.ignore_permissions = True
+		tse_tx.save()
+
+		# 14. TSE Transaktion wird in der POS Invoice verlinkt
+		doc.db_set("tse_transaction", tse_tx.name)
+
+		# 15. Transaktion update (update_transaction)
+		#    Transaktion kann beednet werden im Restaurant Umfeld müsste noch die Update Funktion kommen
+		# TODO
+
+		# 16. Transaktion finish (finish_transaction)
+		response = provider.finish_transaction(
+			tss_id=tss_id,
+			client_id=client_id,
+			tx_id=tse_tx.transaction_id,
+			tx_revision=tx_revision + 1,  # TODO Revisions Nummer noch korrekt erfassen und hochzählen
+			schema=schema,
+		)
+
+		# 17. Vorhandene TSE Transaction wieder laden
+		tse_tx = frappe.get_doc("TSE Transaction", tse_tx.name)
+
+		# 18. TSE Transactions Daten in Doc nachtragen und speichern
+		tse_tx.transaction_status = response.get("state")
+		tse_tx.end_time = datetime.fromtimestamp(response.get("time_end"))
+		tse_tx.qr_code_data = response.get("qr_code_data")
+		tse_tx.transaction_revision = response.get("revision")
+		tse_tx.signature_counter = response.get("signature", {}).get("counter")
+		tse_tx.transaction_number = response.get("number")
+		tse_tx.full_schema_req = frappe.as_json(
+			{
+				"schema": schema,
+				"client_id": client_id,
+				"state": "FINISHED",
+			},
+			indent=2,
+		)
+		tse_tx.full_schema_res = frappe.as_json(response, indent=2)
+
+		# 19. VAT-Childs aus Schema
+		receipt = schema.get("standard_v1", {}).get("receipt", {})
+
+		for vat_row in receipt.get("amounts_per_vat_rate", []):
+			vat_code = vat_row.get("vat_rate")
+			amount = vat_row.get("amount")
+
+			vat_rate_name = frappe.db.get_value(
+				"TSE VAT Rate",
+				{"vat_rate_code": vat_code},
+				"name",
+			)
+
+			if not vat_rate_name:
+				frappe.throw(_("Missing TSE VAT Rate configuration for vat_rate_code '{0}'.").format(vat_code))
+
+			tse_tx.append(
+				"vat_rate",
+				{
+					"vat_rate": vat_rate_name,
+					"amount": amount,
+				},
+			)
+
+		# 20. Payment-Childs aus Schema
+		for pay_row in receipt.get("amounts_per_payment_type", []):
+			pay_code = pay_row.get("payment_type")
+			amount = pay_row.get("amount")
+
+			payment_type_name = frappe.db.get_value(
+				"TSE Payment Type",
+				{"payment_code": pay_code},
+				"name",
+			)
+
+			if not payment_type_name:
+				frappe.throw(
+					_("Missing TSE Payment Type configuration for payment_code '{0}'.").format(pay_code)
+				)
+
+			tse_tx.append(
+				"payment_types",
+				{
+					"payment_type": payment_type_name,
+					"amount": amount,
+				},
+			)
+
+		# 21. TSE Transaction Updaten mit Daten und dann Submit
+		tse_tx.flags.ignore_permissions = True
+		tse_tx.save()
+		tse_tx.flags.ignore_permissions = True
+		tse_tx.submit()
+	except Exception:
+		_resolve_started_transaction_failure(
+			provider=provider,
+			pos_invoice=doc,
+			tse_tx=tse_tx,
+			tss_id=tss_id,
+			client_id=client_id,
+			schema=schema,
+		)
+		raise
+
+
+@frappe.whitelist()
+def refresh_tse_transaction_status(name: str):
+	frappe.only_for(("System Manager", "TSE Admin"))
+
+	doc = frappe.get_doc("TSE Transaction", name)
+	if not doc.transaction_id:
+		frappe.throw(_("Cannot refresh a TSE Transaction without a transaction_id."))
+
+	provider, tss_id, _client_id = _get_transaction_provider_context(doc)
+	response = provider.get_transaction(tss_id, doc.transaction_id)
+	_sync_existing_transaction_from_remote(doc, response, clear_pos_invoice_link_on_cancel=True)
+	return {"name": doc.name, "transaction_status": doc.transaction_status}
+
+
+@frappe.whitelist()
+def resolve_active_tse_transaction(name: str):
+	frappe.only_for(("System Manager", "TSE Admin"))
+
+	doc = frappe.get_doc("TSE Transaction", name)
+	if not doc.transaction_id:
+		frappe.throw(_("Cannot resolve a TSE Transaction without a transaction_id."))
+
+	provider, tss_id, client_id = _get_transaction_provider_context(doc)
+	remote = provider.get_transaction(tss_id, doc.transaction_id)
+	remote_status = _normalize_transaction_status(remote.get("state") or remote.get("status"))
+
+	if remote_status != "ACTIVE":
+		_sync_existing_transaction_from_remote(
+			doc,
+			remote,
+			clear_pos_invoice_link_on_cancel=(remote_status == "CANCELLED"),
+		)
+		return {"name": doc.name, "transaction_status": doc.transaction_status}
+
+	pos_invoice_docstatus = _get_linked_pos_invoice_docstatus(doc.pos_invoice)
+	if pos_invoice_docstatus == 1:
+		frappe.throw(
+			_(
+				"Cannot resolve an ACTIVE TSE Transaction that is linked to a submitted POS Invoice."
+			)
+		)
+
+	next_revision = (_to_int(remote.get("revision") or remote.get("tx_revision"), 1) or 1) + 1
+	cancel_response = provider.cancel_transaction(
 		tss_id=tss_id,
+		tx_id=doc.transaction_id,
+		tx_revision=next_revision,
 		client_id=client_id,
-		tx_revision=1,
 	)
-
-	# 12. Anlegen des Docs mit Zwischenstand
-	tse_tx = frappe.get_doc(
-		{
-			"doctype": "TSE Transaction",
-			"tse_security_device": tse_device.name,
-			"tse_client": tse_client.name,
-			"company": doc.company,
-			"pos_invoice": doc.name,
-			"transaction_type": tx_type,
-			"transaction_id": response.get("_id"),
-			"transaction_revision": tx_revision,  # Sollte beim anlegen zuerst 1 sein
-			"transaction_status": response.get("state"),  # Sollte ACTIVE sein
-			"start_time": datetime.fromtimestamp(response.get("time_start")),
-		}
-	)
-
-	# 13. Zwischenstand speichern falls etwas schief läuft
-
-	tse_tx.flags.ignore_permissions = True
-	tse_tx.insert()
-	tse_tx.flags.ignore_permissions = True
-	tse_tx.save()
-
-	# 14. TSE Transaktion wird in der POS Invoice verlinkt
-	doc.db_set("tse_transaction", tse_tx.name)
-
-	# 15. Transaktion update (update_transaction)
-	#    Transaktion kann beednet werden im Restaurant Umfeld müsste noch die Update Funktion kommen
-	# TODO
-
-	# 16. Transaktion finish (finish_transaction)
-	response = provider.finish_transaction(
-		tss_id=tss_id,
-		client_id=client_id,
-		tx_id=tse_tx.transaction_id,
-		tx_revision=tx_revision + 1,  # TODO Revisions Nummer noch korrekt erfassen und hochzählen
-		schema=schema,
-	)
-
-	# 17. Vorhandene TSE Transaction wieder laden
-	tse_tx = frappe.get_doc("TSE Transaction", tse_tx.name)
-
-	# 18. TSE Transactions Daten in Doc nachtragen und speichern
-	tse_tx.transaction_status = response.get("state")
-	tse_tx.end_time = datetime.fromtimestamp(response.get("time_end"))
-	tse_tx.qr_code_data = response.get("qr_code_data")
-	tse_tx.transaction_revision = response.get("revision")
-	tse_tx.signature_counter = response.get("signature", {}).get("counter")
-	tse_tx.transaction_number = response.get("number")
-	tse_tx.full_schema_req = frappe.as_json(
-		{
-			"schema": schema,
+	_sync_existing_transaction_from_remote(
+		doc,
+		cancel_response,
+		request_payload={
+			"state": "CANCELLED",
 			"client_id": client_id,
-			"state": "FINISHED",
 		},
-		indent=2,
+		clear_pos_invoice_link_on_cancel=True,
 	)
-	tse_tx.full_schema_res = frappe.as_json(response, indent=2)
-
-	# 19. VAT-Childs aus Schema
-	receipt = schema.get("standard_v1", {}).get("receipt", {})
-
-	for vat_row in receipt.get("amounts_per_vat_rate", []):
-		vat_code = vat_row.get("vat_rate")
-		amount = vat_row.get("amount")
-
-		vat_rate_name = frappe.db.get_value(
-			"TSE VAT Rate",
-			{"vat_rate_code": vat_code},
-			"name",
-		)
-
-		if not vat_rate_name:
-			frappe.throw(_("Missing TSE VAT Rate configuration for vat_rate_code '{0}'.").format(vat_code))
-
-		tse_tx.append(
-			"vat_rate",
-			{
-				"vat_rate": vat_rate_name,
-				"amount": amount,
-			},
-		)
-
-	# 20. Payment-Childs aus Schema
-	for pay_row in receipt.get("amounts_per_payment_type", []):
-		pay_code = pay_row.get("payment_type")
-		amount = pay_row.get("amount")
-
-		payment_type_name = frappe.db.get_value(
-			"TSE Payment Type",
-			{"payment_code": pay_code},
-			"name",
-		)
-
-		if not payment_type_name:
-			frappe.throw(_("Missing TSE Payment Type configuration for payment_code '{0}'.").format(pay_code))
-
-		tse_tx.append(
-			"payment_types",
-			{
-				"payment_type": payment_type_name,
-				"amount": amount,
-			},
-		)
-
-	# 21. TSE Transaction Updaten mit Daten und dann Submit
-	tse_tx.flags.ignore_permissions = True
-	tse_tx.save()
-	tse_tx.flags.ignore_permissions = True
-	tse_tx.submit()
+	return {"name": doc.name, "transaction_status": doc.transaction_status}

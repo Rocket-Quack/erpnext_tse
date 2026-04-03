@@ -1,9 +1,12 @@
 # Copyright (c) 2025, RocketQuackIT and Contributors
 # See license.txt
 
+from unittest.mock import patch
+
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+from erpnext_tse.erpnext_tse.doctype.tse_transaction import tse_transaction
 from erpnext_tse.erpnext_tse.doctype.tse_transaction import recovery
 
 
@@ -20,6 +23,18 @@ class _FakeTxProvider:
 		if page_index < len(self.pages):
 			return self.pages[page_index]
 		return []
+
+
+class _FakeManageProvider:
+	def __init__(self, *, remote_get, remote_cancel=None):
+		self.remote_get = remote_get
+		self.remote_cancel = remote_cancel or remote_get
+
+	def get_transaction(self, tss_id, tx_id):
+		return dict(self.remote_get)
+
+	def cancel_transaction(self, **kwargs):
+		return dict(self.remote_cancel)
 
 
 class TestTSETransactionRecoveryHelpers(FrappeTestCase):
@@ -92,3 +107,82 @@ class TestTSETransactionRecoveryHelpers(FrappeTestCase):
 		self.assertTrue(all(call["limit"] == 2 for call in provider.calls))
 		self.assertTrue(all(call["order_by"] == recovery.RECOVERY_ORDER_BY for call in provider.calls))
 		self.assertTrue(all(call["order"] == recovery.RECOVERY_ORDER for call in provider.calls))
+
+
+class TestTSETransactionManagementHelpers(FrappeTestCase):
+	def _create_transaction_doc(self, **overrides):
+		doc = frappe.new_doc("TSE Transaction")
+		doc.tse_security_device = overrides.get("tse_security_device", "DEVICE-TEST")
+		doc.tse_client = overrides.get("tse_client", "CLIENT-TEST")
+		doc.company = overrides.get("company", "My Company")
+		doc.pos_invoice = overrides.get("pos_invoice")
+		doc.transaction_type = overrides.get("transaction_type", "SALE")
+		doc.transaction_id = overrides.get("transaction_id", "tx-1")
+		doc.transaction_revision = overrides.get("transaction_revision", 1)
+		doc.transaction_status = overrides.get("transaction_status", "ACTIVE")
+		doc.flags.ignore_validate = True
+		doc.flags.ignore_links = True
+		doc.insert(ignore_permissions=True)
+		return doc
+
+	def test_refresh_tse_transaction_status_marks_finished(self):
+		doc = self._create_transaction_doc()
+		provider = _FakeManageProvider(
+			remote_get={
+				"_id": "tx-1",
+				"state": "FINISHED",
+				"revision": 2,
+				"time_start": 1710000000,
+				"time_end": 1710000060,
+				"number": 7,
+			}
+		)
+
+		with patch(
+			"erpnext_tse.erpnext_tse.doctype.tse_transaction.tse_transaction._get_transaction_provider_context",
+			return_value=(provider, "tss-1", "client-1"),
+		):
+			result = tse_transaction.refresh_tse_transaction_status(doc.name)
+
+		self.assertEqual(result["transaction_status"], "FINISHED")
+		reloaded = frappe.get_doc("TSE Transaction", doc.name)
+		self.assertEqual(reloaded.transaction_status, "FINISHED")
+		self.assertEqual(reloaded.docstatus, 1)
+
+	def test_resolve_active_tse_transaction_cancels_and_unlinks(self):
+		doc = self._create_transaction_doc(pos_invoice="POS-INV-1")
+		provider = _FakeManageProvider(
+			remote_get={"_id": "tx-1", "state": "ACTIVE", "revision": 1},
+			remote_cancel={"_id": "tx-1", "state": "CANCELLED", "revision": 2, "time_end": 1710000060},
+		)
+
+		with patch(
+			"erpnext_tse.erpnext_tse.doctype.tse_transaction.tse_transaction._get_transaction_provider_context",
+			return_value=(provider, "tss-1", "client-1"),
+		), patch(
+			"erpnext_tse.erpnext_tse.doctype.tse_transaction.tse_transaction._get_linked_pos_invoice_docstatus",
+			return_value=0,
+		), patch(
+			"erpnext_tse.erpnext_tse.doctype.tse_transaction.tse_transaction._unlink_pos_invoice_tse_transaction"
+		) as unlink:
+			result = tse_transaction.resolve_active_tse_transaction(doc.name)
+
+		self.assertEqual(result["transaction_status"], "CANCELLED")
+		reloaded = frappe.get_doc("TSE Transaction", doc.name)
+		self.assertEqual(reloaded.transaction_status, "CANCELLED")
+		self.assertEqual(reloaded.docstatus, 1)
+		unlink.assert_called_once_with("POS-INV-1", doc.name)
+
+	def test_resolve_active_tse_transaction_rejects_submitted_invoice(self):
+		doc = self._create_transaction_doc(pos_invoice="POS-INV-2")
+		provider = _FakeManageProvider(remote_get={"_id": "tx-1", "state": "ACTIVE", "revision": 1})
+
+		with patch(
+			"erpnext_tse.erpnext_tse.doctype.tse_transaction.tse_transaction._get_transaction_provider_context",
+			return_value=(provider, "tss-1", "client-1"),
+		), patch(
+			"erpnext_tse.erpnext_tse.doctype.tse_transaction.tse_transaction._get_linked_pos_invoice_docstatus",
+			return_value=1,
+		):
+			with self.assertRaises(frappe.ValidationError):
+				tse_transaction.resolve_active_tse_transaction(doc.name)
