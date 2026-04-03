@@ -191,7 +191,9 @@ def create_cash_point_closing_for_pos_closing_entry(
 
 	cash_register_id = register.cash_register_id or tse_client.client_id
 	source_hash = _build_source_hash(doc, cash_register_id, getattr(doc, "posting_date", None))
-	duplicate = _get_active_duplicate_by_source_hash(source_hash, exclude_names=[existing.name] if existing else None)
+	duplicate = _get_active_duplicate_by_source_hash(
+		source_hash, exclude_names=[existing.name] if existing else None
+	)
 	if duplicate:
 		_log_duplicate_skip(duplicate.name, doc.name)
 		return frappe.get_doc("DSFinV-K Cash Point Closing", duplicate.name)
@@ -201,7 +203,6 @@ def create_cash_point_closing_for_pos_closing_entry(
 	closing_doc.source_hash = source_hash
 
 	settings = frappe.get_single("TSE Settings")
-	provider = get_tse_provider(settings)
 	return _submit_cash_point_closing_create(
 		closing_doc,
 		payload,
@@ -882,6 +883,7 @@ def mark_cash_point_closing_as_deleted(
 			message_summary=_("Cash Point Closing marked as deleted by administrator."),
 		)
 		doc.flags.ignore_permissions = True
+		doc.flags.ignore_links = True
 		doc.save()
 		frappe.db.commit()
 		return {"name": doc.name, "status": doc.status}
@@ -894,6 +896,7 @@ def mark_cash_point_closing_as_deleted(
 			message_summary=str(exc),
 		)
 		doc.flags.ignore_permissions = True
+		doc.flags.ignore_links = True
 		doc.save()
 		frappe.db.commit()
 		raise
@@ -923,9 +926,9 @@ def retry_cash_point_closing_create(name: str, enqueue: bool = True):
 	duplicate = _get_active_duplicate_by_source_hash(doc.source_hash, exclude_names=[doc.name])
 	if duplicate:
 		frappe.throw(
-			_(
-				"An active Cash Point Closing already exists for this source ({0}, status {1})."
-			).format(duplicate.name, duplicate.status)
+			_("An active Cash Point Closing already exists for this source ({0}, status {1}).").format(
+				duplicate.name, duplicate.status
+			)
 		)
 
 	if enqueue:
@@ -1042,9 +1045,7 @@ def _submit_cash_point_closing_create(
 		frappe.log_error(frappe.get_traceback(), _("DSFinV-K Cash Point Closing failed"))
 		if raise_on_error:
 			frappe.throw(
-				_(
-					"DSFinV-K Cash Point Closing failed. Please review the DSFinV-K Cash Point Closing record."
-				)
+				_("DSFinV-K Cash Point Closing failed. Please review the DSFinV-K Cash Point Closing record.")
 			)
 		return closing_doc
 

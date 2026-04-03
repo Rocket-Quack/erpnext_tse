@@ -6,8 +6,7 @@ from unittest.mock import patch
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from erpnext_tse.erpnext_tse.doctype.tse_transaction import tse_transaction
-from erpnext_tse.erpnext_tse.doctype.tse_transaction import recovery
+from erpnext_tse.erpnext_tse.doctype.tse_transaction import recovery, tse_transaction
 
 
 class _FakeTxProvider:
@@ -156,15 +155,19 @@ class TestTSETransactionManagementHelpers(FrappeTestCase):
 			remote_cancel={"_id": "tx-1", "state": "CANCELLED", "revision": 2, "time_end": 1710000060},
 		)
 
-		with patch(
-			"erpnext_tse.erpnext_tse.doctype.tse_transaction.tse_transaction._get_transaction_provider_context",
-			return_value=(provider, "tss-1", "client-1"),
-		), patch(
-			"erpnext_tse.erpnext_tse.doctype.tse_transaction.tse_transaction._get_linked_pos_invoice_docstatus",
-			return_value=0,
-		), patch(
-			"erpnext_tse.erpnext_tse.doctype.tse_transaction.tse_transaction._unlink_pos_invoice_tse_transaction"
-		) as unlink:
+		with (
+			patch(
+				"erpnext_tse.erpnext_tse.doctype.tse_transaction.tse_transaction._get_transaction_provider_context",
+				return_value=(provider, "tss-1", "client-1"),
+			),
+			patch(
+				"erpnext_tse.erpnext_tse.doctype.tse_transaction.tse_transaction._get_linked_pos_invoice_docstatus",
+				return_value=0,
+			),
+			patch(
+				"erpnext_tse.erpnext_tse.doctype.tse_transaction.tse_transaction._unlink_pos_invoice_tse_transaction"
+			) as unlink,
+		):
 			result = tse_transaction.resolve_active_tse_transaction(doc.name)
 
 		self.assertEqual(result["transaction_status"], "CANCELLED")
@@ -177,12 +180,15 @@ class TestTSETransactionManagementHelpers(FrappeTestCase):
 		doc = self._create_transaction_doc(pos_invoice="POS-INV-2")
 		provider = _FakeManageProvider(remote_get={"_id": "tx-1", "state": "ACTIVE", "revision": 1})
 
-		with patch(
-			"erpnext_tse.erpnext_tse.doctype.tse_transaction.tse_transaction._get_transaction_provider_context",
-			return_value=(provider, "tss-1", "client-1"),
-		), patch(
-			"erpnext_tse.erpnext_tse.doctype.tse_transaction.tse_transaction._get_linked_pos_invoice_docstatus",
-			return_value=1,
+		with (
+			patch(
+				"erpnext_tse.erpnext_tse.doctype.tse_transaction.tse_transaction._get_transaction_provider_context",
+				return_value=(provider, "tss-1", "client-1"),
+			),
+			patch(
+				"erpnext_tse.erpnext_tse.doctype.tse_transaction.tse_transaction._get_linked_pos_invoice_docstatus",
+				return_value=1,
+			),
 		):
 			with self.assertRaises(frappe.ValidationError):
 				tse_transaction.resolve_active_tse_transaction(doc.name)

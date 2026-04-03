@@ -698,7 +698,9 @@ def create_tse_transaction_for_pos_invoice(doc, method: str | None = None):
 			)
 
 			if not vat_rate_name:
-				frappe.throw(_("Missing TSE VAT Rate configuration for vat_rate_code '{0}'.").format(vat_code))
+				frappe.throw(
+					_("Missing TSE VAT Rate configuration for vat_rate_code '{0}'.").format(vat_code)
+				)
 
 			tse_tx.append(
 				"vat_rate",
@@ -785,11 +787,7 @@ def resolve_active_tse_transaction(name: str):
 
 	pos_invoice_docstatus = _get_linked_pos_invoice_docstatus(doc.pos_invoice)
 	if pos_invoice_docstatus == 1:
-		frappe.throw(
-			_(
-				"Cannot resolve an ACTIVE TSE Transaction that is linked to a submitted POS Invoice."
-			)
-		)
+		frappe.throw(_("Cannot resolve an ACTIVE TSE Transaction that is linked to a submitted POS Invoice."))
 
 	next_revision = (_to_int(remote.get("revision") or remote.get("tx_revision"), 1) or 1) + 1
 	cancel_response = provider.cancel_transaction(
