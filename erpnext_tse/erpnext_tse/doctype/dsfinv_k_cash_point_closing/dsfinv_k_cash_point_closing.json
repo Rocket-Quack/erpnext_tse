@@ -22,12 +22,19 @@
     "client_id",
     "business_date",
     "export_creation_date",
+    "source_hash",
     "sb_provider_meta",
     "time_creation",
     "time_update",
     "time_deleted",
     "error_code",
     "error_message",
+    "sb_cleanup",
+    "cleanup_reason",
+    "column_break_cleanup",
+    "cleanup_valid_record",
+    "cleanup_performed_by",
+    "cleanup_performed_at",
     "sb_payload",
     "request_payload",
     "response_payload",
@@ -138,6 +145,14 @@
       "read_only": 1
     },
     {
+      "fieldname": "source_hash",
+      "fieldtype": "Data",
+      "hidden": 1,
+      "label": "Source Hash",
+      "read_only": 1,
+      "search_index": 1
+    },
+    {
       "fieldname": "sb_provider_meta",
       "fieldtype": "Section Break",
       "label": "Provider Metadata"
@@ -170,6 +185,41 @@
       "fieldname": "error_message",
       "fieldtype": "Small Text",
       "label": "Error Message",
+      "read_only": 1
+    },
+    {
+      "fieldname": "sb_cleanup",
+      "fieldtype": "Section Break",
+      "label": "Cleanup"
+    },
+    {
+      "fieldname": "cleanup_reason",
+      "fieldtype": "Small Text",
+      "label": "Cleanup Reason",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_cleanup",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "cleanup_valid_record",
+      "fieldtype": "Link",
+      "label": "Valid Record",
+      "options": "DSFinV-K Cash Point Closing",
+      "read_only": 1
+    },
+    {
+      "fieldname": "cleanup_performed_by",
+      "fieldtype": "Link",
+      "label": "Cleanup Performed By",
+      "options": "User",
+      "read_only": 1
+    },
+    {
+      "fieldname": "cleanup_performed_at",
+      "fieldtype": "Datetime",
+      "label": "Cleanup Performed At",
       "read_only": 1
     },
     {
