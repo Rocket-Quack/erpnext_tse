@@ -217,7 +217,9 @@ def _build_cash_point_closing_head(doc, transactions: list[dict[str, Any]]) -> d
 	}
 
 	if getattr(doc, "posting_date", None):
-		head["business_date"] = doc.posting_date
+		# In v16 posting_date can be a datetime.date object which is not
+		# JSON-serializable. Convert to ISO format string explicitly.
+		head["business_date"] = str(doc.posting_date)
 
 	return head
 
@@ -331,6 +333,14 @@ def _build_transaction_from_pos_invoice(pos_inv, company_currency: str) -> dict[
 
 
 def _build_amounts_per_vat_definition(pos_inv) -> list[dict[str, Any]]:
+	"""
+	Build VAT breakdown per DSFinV-K VAT definition for a POS Invoice.
+
+	In v15 the tax details are stored as a JSON field `item_wise_tax_detail`
+	on each tax row. In v16 this field no longer exists — the data is in the
+	Child Table `item_wise_tax_details` (DocType: "Item Wise Tax Detail").
+	Both formats are supported with v15 as primary and v16 as fallback.
+	"""
 	items = pos_inv.get("items") or []
 	if not items:
 		frappe.throw(_("POS Invoice has no items."))
@@ -339,13 +349,20 @@ def _build_amounts_per_vat_definition(pos_inv) -> list[dict[str, Any]]:
 	if not taxes:
 		frappe.throw(_("POS Invoice has no taxes rows."))
 
+	# v15: item_code -> net amount (addiert bei doppeltem item_code auf mehreren Zeilen)
 	net_amount_by_item_code: dict[str, float] = {}
+	# v16: item_row name -> net amount (eindeutig pro Zeile, vermeidet Merge bei gleichem item_code)
+	net_amount_by_row_name: dict[str, float] = {}
 	for item_row in items:
 		item_code = getattr(item_row, "item_code", None) or (
 			item_row.get("item_code") if isinstance(item_row, dict) else None
 		)
 		if not item_code:
 			continue
+
+		row_name = getattr(item_row, "name", None) or (
+			item_row.get("name") if isinstance(item_row, dict) else None
+		)
 
 		base_net_amount = (
 			getattr(item_row, "base_net_amount", None)
@@ -359,7 +376,10 @@ def _build_amounts_per_vat_definition(pos_inv) -> list[dict[str, Any]]:
 				else item_row.get("net_amount")
 			)
 
-		net_amount_by_item_code[item_code] = float(base_net_amount or 0)
+		amt = float(base_net_amount or 0)
+		net_amount_by_item_code[item_code] = net_amount_by_item_code.get(item_code, 0.0) + amt
+		if row_name:
+			net_amount_by_row_name[row_name] = amt
 
 	if not net_amount_by_item_code:
 		frappe.throw(_("POS Invoice items are missing item_code values."))
@@ -376,19 +396,45 @@ def _build_amounts_per_vat_definition(pos_inv) -> list[dict[str, Any]]:
 			return rate_percent, tax_amount
 		return 0.0, 0.0
 
-	for tax_row in taxes:
-		tax_account = getattr(tax_row, "account_head", None) or (
-			tax_row.get("account_head") if isinstance(tax_row, dict) else None
-		)
-		item_wise_tax_detail_json = (
-			getattr(tax_row, "item_wise_tax_detail", None)
-			if not isinstance(tax_row, dict)
-			else tax_row.get("item_wise_tax_detail")
+	# --- v16 Child Table fallback (same approach as _build_amounts_per_vat_rate) ---
+	item_wise_tax_details_table = pos_inv.get("item_wise_tax_details") or []
+	if not item_wise_tax_details_table and pos_inv.name:
+		item_wise_tax_details_table = frappe.get_all(
+			"Item Wise Tax Detail",
+			filters={"parent": pos_inv.name, "parenttype": pos_inv.doctype},
+			fields=["tax_row", "item_row", "rate", "amount", "taxable_amount"],
+			order_by="idx",
 		)
 
-		if not tax_account or not item_wise_tax_detail_json:
-			continue
+	# v16 Lookup: (tax_row_name, item_row_name) -> {rate, amount}
+	# Schlüssel ist item_row_name (eindeutig pro Invoice-Zeile), damit mehrere Zeilen mit
+	# gleichem item_code getrennt bleiben und nicht unter einem gemeinsamen Key zusammenfallen.
+	iwtd_by_tax_item_row: dict[tuple[str, str], dict] = {}
+	if item_wise_tax_details_table:
+		for detail_row in item_wise_tax_details_table:
+			tax_row_name = getattr(detail_row, "tax_row", None) or (
+				detail_row.get("tax_row") if isinstance(detail_row, dict) else None
+			)
+			item_row_name = getattr(detail_row, "item_row", None) or (
+				detail_row.get("item_row") if isinstance(detail_row, dict) else None
+			)
+			if tax_row_name and item_row_name:
+				rate = float(
+					getattr(detail_row, "rate", 0)
+					or (detail_row.get("rate", 0) if isinstance(detail_row, dict) else 0)
+				)
+				amount = float(
+					getattr(detail_row, "amount", 0)
+					or (detail_row.get("amount", 0) if isinstance(detail_row, dict) else 0)
+				)
+				iwtd_by_tax_item_row[(tax_row_name, item_row_name)] = {
+					"rate": rate,
+					"amount": amount,
+				}
 
+	def _resolve_vat_id(tax_account: str) -> int:
+		"""Löst Tax Account -> DSFinV-K VAT Definition Export ID (mit Cache). Wird lazy
+		aufgerufen, damit Steuerzeilen ohne nutzbare Detail-Daten kein Mapping erzwingen."""
 		vat_id = vat_id_by_tax_account.get(tax_account)
 		if not vat_id:
 			vat_id = frappe.db.get_value(
@@ -399,19 +445,57 @@ def _build_amounts_per_vat_definition(pos_inv) -> list[dict[str, Any]]:
 					_("No DSFinV-K VAT Rate mapping found for Tax Account '{0}'.").format(tax_account)
 				)
 			vat_id_by_tax_account[tax_account] = int(vat_id)
+		return int(vat_id)
 
-		item_wise_details = frappe.parse_json(item_wise_tax_detail_json)
-		if not isinstance(item_wise_details, dict):
+	for tax_row in taxes:
+		tax_account = getattr(tax_row, "account_head", None) or (
+			tax_row.get("account_head") if isinstance(tax_row, dict) else None
+		)
+
+		if not tax_account:
 			continue
 
-		for item_code, detail_value in item_wise_details.items():
-			if item_code not in net_amount_by_item_code:
+		# v15 path: JSON field on tax row
+		item_wise_tax_detail_json = (
+			getattr(tax_row, "item_wise_tax_detail", None)
+			if not isinstance(tax_row, dict)
+			else tax_row.get("item_wise_tax_detail")
+		)
+
+		if item_wise_tax_detail_json:
+			item_wise_details = frappe.parse_json(item_wise_tax_detail_json)
+			if not isinstance(item_wise_details, dict):
 				continue
 
-			rate_percent, tax_amount = parse_item_wise_detail(detail_value)
-			bucket = vat_sums.setdefault(int(vat_id), {"excl_vat": 0.0, "vat": 0.0})
-			bucket["excl_vat"] += net_amount_by_item_code[item_code]
-			bucket["vat"] += float(tax_amount or 0)
+			# VAT-Mapping erst auflösen wenn wir tatsächlich Daten haben
+			vat_id = _resolve_vat_id(tax_account)
+
+			for item_code, detail_value in item_wise_details.items():
+				if item_code not in net_amount_by_item_code:
+					continue
+
+				rate_percent, tax_amount = parse_item_wise_detail(detail_value)
+				bucket = vat_sums.setdefault(int(vat_id), {"excl_vat": 0.0, "vat": 0.0})
+				bucket["excl_vat"] += net_amount_by_item_code[item_code]
+				bucket["vat"] += float(tax_amount or 0)
+
+		elif iwtd_by_tax_item_row:
+			# v16 path: Child Table "Item Wise Tax Detail" — iteriert über item_row_names
+			# (eindeutig), damit mehrere Zeilen mit gleichem item_code getrennt verarbeitet werden.
+			tax_row_name = getattr(tax_row, "name", None) or (
+				tax_row.get("name") if isinstance(tax_row, dict) else None
+			)
+			vat_id = None
+			for item_row_name, item_net_amount in net_amount_by_row_name.items():
+				detail = iwtd_by_tax_item_row.get((tax_row_name, item_row_name))
+				if not detail:
+					continue
+				# VAT-Mapping lazy: erst auflösen wenn wir relevante Daten haben
+				if vat_id is None:
+					vat_id = _resolve_vat_id(tax_account)
+				bucket = vat_sums.setdefault(int(vat_id), {"excl_vat": 0.0, "vat": 0.0})
+				bucket["excl_vat"] += item_net_amount
+				bucket["vat"] += float(detail["amount"] or 0)
 
 	if not vat_sums:
 		frappe.throw(_("Could not derive VAT amounts for POS Invoice {0}.").format(pos_inv.name))
@@ -498,7 +582,9 @@ def _build_payment_types_for_pos_invoice(pos_inv, company_currency: str) -> list
 
 
 def _get_pos_invoices_from_closing(doc) -> list[Document]:
-	rows = doc.get("pos_transactions") or []
+	# In v15 the child table is called "pos_transactions",
+	# in v16 it was renamed to "pos_invoices".
+	rows = doc.get("pos_invoices") or doc.get("pos_transactions") or []
 	if not rows:
 		frappe.throw(_("POS Closing Entry has no POS Transactions."))
 
